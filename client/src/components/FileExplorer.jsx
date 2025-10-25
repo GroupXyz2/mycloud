@@ -48,6 +48,34 @@ export default function FileExplorer({
     }
   }
 
+  const handleDownload = async (fileId, fileName) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${BASE_PATH}/api/files/${fileId}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Download failed')
+      }
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('Download error:', error)
+      alert('Fehler beim Herunterladen der Datei')
+    }
+  }
+
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B'
     const k = 1024
@@ -191,13 +219,13 @@ export default function FileExplorer({
                   </p>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <a
-                    href={fileAPI.download(file.id)}
+                  <button
+                    onClick={() => handleDownload(file.id, file.original_name)}
                     className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
                     title="Herunterladen"
                   >
                     <Download className="w-5 h-5" />
-                  </a>
+                  </button>
                   <button
                     onClick={() => handleShare(file.id)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
