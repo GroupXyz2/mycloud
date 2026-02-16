@@ -76,11 +76,19 @@
     "deleteConfirm": "Do you really want to delete this user?",
     "createError": "Error creating user",
     "deleteError": "Error deleting user",
+    "updateError": "Error updating user",
     "users": "Users",
     "storage": "Storage",
     "isAdmin": "Administrator",
     "user": "User",
     "role": "Role",
-    "created": "Created"
+    "created": "Created",
+    "editUser": "Edit User",
+    "editStorageQuota": "Edit Storage Quota",
+    "newStorageQuota": "New Storage Quota (GB)",
+    "systemDiskSpace": "System Disk Space",
+    "diskUsed": "Used",
+    "diskAvailable": "Available",
+    "diskTotal": "Total"
   }
 }

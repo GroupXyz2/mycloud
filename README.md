@@ -55,6 +55,8 @@ openssl rand -base64 32
 sudo docker compose -f docker-compose.local.yml up -d --build
 ```
 
+> **Note:** The `docker-compose.local.yml` configuration uses `BASE_PATH=/` which is correct for local/direct access. If you're deploying behind a reverse proxy to a subdirectory (e.g., `/cloud`), use the standard `docker-compose.yml` which sets `BASE_PATH=/cloud`.
+
 4. **Find your device's IP address**
 ```bash
 # On Linux/Mac
@@ -186,6 +188,8 @@ cd ..
 sudo docker compose up -d
 ```
 
+> **Note:** The standard `docker-compose.yml` uses `BASE_PATH=/cloud` for subdirectory deployment behind a reverse proxy. If you're deploying to the root of a domain (e.g., `https://mycloud.example.com`), edit `docker-compose.yml` and change `BASE_PATH: /cloud` to `BASE_PATH: /` in both the `build.args` and `environment` sections.
+
 6. **Access MyCloud**
 Open your browser and navigate to: `https://yourdomain.com/cloud`
 
@@ -243,8 +247,15 @@ The frontend will be available at `http://localhost:6869` with hot-reload enable
 
 ### Production Build
 
+⚠️ **IMPORTANT: Configure BASE_PATH before building**
+
+The `BASE_PATH` determines where the application expects to be served from:
+- Use `BASE_PATH=/` for **local/direct access** (e.g., `http://localhost:6868` or `http://192.168.1.50:6868`)
+- Use `BASE_PATH=/cloud` (or other path) for **subdirectory deployment** behind a reverse proxy (e.g., `https://yourdomain.com/cloud`)
+
+**For Local/Direct Access:**
 ```bash
-# Build frontend
+# Build frontend for local access
 cd client
 npm run build
 
@@ -252,6 +263,19 @@ npm run build
 cd ..
 NODE_ENV=production npm start
 ```
+
+**For Subdirectory Deployment (e.g., behind Apache/Nginx):**
+```bash
+# Build frontend with custom base path
+cd client
+BASE_PATH=/cloud npm run build
+
+# Start server in production mode
+cd ..
+NODE_ENV=production npm start
+```
+
+Access the application at `http://localhost:6868` (or your server's IP/hostname).
 
 ## Usage Guide
 
@@ -373,13 +397,11 @@ sudo systemctl restart apache2
 <VirtualHost *:443>
     ServerName yourdomain.com
 
-    ```
     # SSL Configuration
     SLEngine on
     SSLCertificateFile /etc/letsencrypt/live/yourdomain.com/fullchain.pem
     SSLCertificateKeyFile /etc/letsencrypt/live/yourdomain.com/privkey.pem
     Include /etc/letsencrypt/options-ssl-apache.conf
-    ```
 
     # MyCloud Proxy Configuration
     ProxyPreserveHost On

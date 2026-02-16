@@ -76,11 +76,19 @@
     "deleteConfirm": "Möchten Sie diesen Benutzer wirklich löschen?",
     "createError": "Fehler beim Erstellen des Benutzers",
     "deleteError": "Fehler beim Löschen des Benutzers",
+    "updateError": "Fehler beim Aktualisieren des Benutzers",
     "users": "Benutzer",
     "storage": "Speicher",
     "isAdmin": "Administrator",
     "user": "Benutzer",
     "role": "Rolle",
-    "created": "Erstellt"
+    "created": "Erstellt",
+    "editUser": "Benutzer bearbeiten",
+    "editStorageQuota": "Speicherplatz bearbeiten",
+    "newStorageQuota": "Neuer Speicherplatz (GB)",
+    "systemDiskSpace": "System-Speicherplatz",
+    "diskUsed": "Verwendet",
+    "diskAvailable": "Verfügbar",
+    "diskTotal": "Gesamt"
   }
 }

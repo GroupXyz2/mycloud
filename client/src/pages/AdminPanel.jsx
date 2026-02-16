@@ -2,14 +2,16 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { userAPI } from '../api'
 import Header from '../components/Header'
-import { UserPlus, Trash2, Edit, HardDrive } from 'lucide-react'
+import { UserPlus, Trash2, Edit, HardDrive, Server } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 export default function AdminPanel() {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [users, setUsers] = useState([])
+  const [diskSpace, setDiskSpace] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -19,6 +21,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     loadUsers()
+    loadDiskSpace()
   }, [])
 
   const loadUsers = async () => {
@@ -27,6 +30,15 @@ export default function AdminPanel() {
       setUsers(response.data)
     } catch (error) {
       console.error('Error loading users:', error)
+    }
+  }
+
+  const loadDiskSpace = async () => {
+    try {
+      const response = await userAPI.getDiskSpace()
+      setDiskSpace(response.data)
+    } catch (error) {
+      console.error('Error loading disk space:', error)
     }
   }
 
@@ -50,6 +62,21 @@ export default function AdminPanel() {
       loadUsers()
     } catch (error) {
       alert(error.response?.data?.error || t('admin.deleteError'))
+    }
+  }
+
+  const handleEditUser = async (e) => {
+    e.preventDefault()
+    if (!editingUser) return
+
+    try {
+      await userAPI.update(editingUser.id, {
+        storageQuota: editingUser.storageQuota
+      })
+      setEditingUser(null)
+      loadUsers()
+    } catch (error) {
+      alert(error.response?.data?.error || t('admin.updateError'))
     }
   }
 
@@ -79,6 +106,94 @@ export default function AdminPanel() {
             {t('admin.createUser')}
           </button>
         </div>
+
+        {/* Disk Space Card */}
+        {diskSpace && (
+          <div className="card mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Server className="w-6 h-6 text-primary-600" />
+              <h2 className="text-xl font-semibold">{t('admin.systemDiskSpace')}</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">{t('admin.diskTotal')}</p>
+                <p className="text-2xl font-bold text-blue-600">{formatBytes(diskSpace.total)}</p>
+              </div>
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">{t('admin.diskUsed')}</p>
+                <p className="text-2xl font-bold text-orange-600">{formatBytes(diskSpace.used)}</p>
+              </div>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">{t('admin.diskAvailable')}</p>
+                <p className="text-2xl font-bold text-green-600">{formatBytes(diskSpace.available)}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-primary-600 h-3 rounded-full transition-all"
+                  style={{ width: `${(diskSpace.used / diskSpace.total * 100).toFixed(1)}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-600 mt-2 text-center">
+                {((diskSpace.used / diskSpace.total) * 100).toFixed(1)}% {t('admin.diskUsed')}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Edit User Modal */}
+        {editingUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-semibold mb-4">{t('admin.editStorageQuota')}</h2>
+              <form onSubmit={handleEditUser} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('admin.username')}
+                  </label>
+                  <input
+                    type="text"
+                    className="input bg-gray-100"
+                    value={editingUser.username}
+                    disabled
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {t('admin.newStorageQuota')}
+                  </label>
+                  <input
+                    type="number"
+                    className="input"
+                    value={editingUser.storageQuota / 1073741824}
+                    onChange={(e) => setEditingUser({
+                      ...editingUser,
+                      storageQuota: e.target.value * 1073741824
+                    })}
+                    min="1"
+                    required
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t('admin.diskUsed')}: {formatBytes(editingUser.storage_used)}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button type="submit" className="btn btn-primary flex-1">
+                    {t('common.save')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="btn btn-secondary flex-1"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {showCreateForm && (
           <div className="card mb-6">
@@ -192,6 +307,18 @@ export default function AdminPanel() {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setEditingUser({
+                            id: user.id,
+                            username: user.username,
+                            storageQuota: user.storage_quota,
+                            storage_used: user.storage_used
+                          })}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title={t('common.edit')}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
                         {!user.is_admin && (
                           <button
                             onClick={() => handleDeleteUser(user.id)}

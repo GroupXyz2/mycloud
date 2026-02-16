@@ -41,6 +41,7 @@ export const userAPI = {
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
   getStorageStats: () => api.get('/users/me/storage'),
+  getDiskSpace: () => api.get('/users/system/disk-space'),
 }
 
 export const fileAPI = {
