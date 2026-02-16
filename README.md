@@ -251,12 +251,6 @@ sudo systemctl restart apache2
 <VirtualHost *:443>
     ServerName yourdomain.com
 
-    # SSL Configuration (if using Let's Encrypt)
-    SSLEngine on
-    SSLCertificateFile /etc/letsencrypt/live/yourdomain.com/fullchain.pem
-    SSLCertificateKeyFile /etc/letsencrypt/live/yourdomain.com/privkey.pem
-    Include /etc/letsencrypt/options-ssl-apache.conf
-
     # MyCloud Proxy Configuration
     ProxyPreserveHost On
     ProxyRequests Off
@@ -279,6 +273,14 @@ sudo systemctl restart apache2
         RequestHeader set X-Forwarded-For %{REMOTE_ADDR}s
     </Location>
 </VirtualHost>
+```
+**If using Letsencrypt, also add this below the ServerName configuration:**
+```
+# SSL Configuration
+SLEngine on
+SSLCertificateFile /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+SSLCertificateKeyFile /etc/letsencrypt/live/yourdomain.com/privkey.pem
+Include /etc/letsencrypt/options-ssl-apache.conf
 ```
 
 **Restart Apache:**
