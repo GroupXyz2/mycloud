@@ -2,6 +2,9 @@
 
 A comprehensive, self-hosted cloud storage platform with admin-managed user system, file upload/download capabilities, folder management, and a modern user interface.
 
+![Dashboard](assets/mycloud.png)
+*Main dashboard view*
+
 ## Features
 
 - **Admin-Managed Users** - Streamlined user management without email verification requirements
