@@ -13,10 +13,12 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - **Docker Support** - Containerized deployment for easy setup and maintenance
 - **JWT Authentication** - Secure token-based authentication system
 
-## Quick Start with Docker
+## Quick Start with Docker and Https
 
 ### Prerequisites
 - Docker and Docker Compose installed
+- Letsencrypt or other certificate service installed
+- Apache2 or Nginx installed
 - Minimum 1GB available storage space
 
 ### Installation
@@ -39,14 +41,14 @@ cp .env.example .env
 
 Example of generating a secure JWT_SECRET:
 ```bash
-# Linux/Mac:
 openssl rand -base64 32
 
 # Or use any random string generator
 ```
 
 3. **Configure Web Server / Reverse Proxy**
-- Apache is recommended.
+- Apache Web Server is tested, Nginx should work too.
+- Generate Certificates with Letsencrypt
 - See the detailed [Web Server Configuration](#option-a-apache-subdirectory-deployment---tested--verified) section below for complete setup instructions.
 
 4. **Build the frontend**
@@ -59,13 +61,11 @@ cd ..
 
 5. **Launch with Docker Compose**
 ```bash
-docker compose up -d
-
-# If you get a permission error use sudo
+sudo docker compose up -d
 ```
 
 6. **Access MyCloud**
-Open your browser and navigate to: `http://localhost:6868`
+Open your browser and navigate to: `https://yourdomain.com/cloud`
 
 **Default credentials:**
 - Username: `admin`
@@ -251,6 +251,14 @@ sudo systemctl restart apache2
 <VirtualHost *:443>
     ServerName yourdomain.com
 
+    ```
+    # SSL Configuration
+    SLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/yourdomain.com/privkey.pem
+    Include /etc/letsencrypt/options-ssl-apache.conf
+    ```
+
     # MyCloud Proxy Configuration
     ProxyPreserveHost On
     ProxyRequests Off
@@ -273,14 +281,6 @@ sudo systemctl restart apache2
         RequestHeader set X-Forwarded-For %{REMOTE_ADDR}s
     </Location>
 </VirtualHost>
-```
-**If using Letsencrypt, also add this below the ServerName configuration:**
-```
-# SSL Configuration
-SLEngine on
-SSLCertificateFile /etc/letsencrypt/live/yourdomain.com/fullchain.pem
-SSLCertificateKeyFile /etc/letsencrypt/live/yourdomain.com/privkey.pem
-Include /etc/letsencrypt/options-ssl-apache.conf
 ```
 
 **Restart Apache:**
