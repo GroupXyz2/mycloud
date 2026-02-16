@@ -16,6 +16,24 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - **Docker Support** - Containerized deployment for easy setup and maintenance
 - **JWT Authentication** - Secure token-based authentication system
 
+## Table of Contents
+
+- [Quick Start for Local Network Use](#quick-start-for-local-network-use)
+- [Quick Start for Online Use with Docker and HTTPS](#quick-start-for-online-use-with-docker-and-https)
+- [Manual Installation (without Docker)](#manual-installation-without-docker)
+- [Usage Guide](#usage-guide)
+- [Configuration](#configuration)
+- [Production Deployment](#production-deployment)
+- [Project Structure](#project-structure)
+- [Security Features](#security-features)
+- [Database](#database)
+- [Troubleshooting](#troubleshooting)
+- [Technology Stack](#technology-stack)
+- [API Endpoints](#api-endpoints)
+- [Using External Storage](#using-external-storage)
+- [Support](#support)
+- [Contributing](#contributing)
+
 ## Quick Start for Local Network use. 
 For home networks with direct access without HTTPS or reverse proxy complexity.
 
