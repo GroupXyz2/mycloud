@@ -720,7 +720,7 @@ For issues or questions:
 
 ## Contributing
 
-Contributions are welcome. Please ensure all tests pass before submitting pull requests.
+Contributions are welcome.
 
 ---
 
