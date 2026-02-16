@@ -45,21 +45,28 @@ openssl rand -base64 32
 # Or use any random string generator
 ```
 
-3. **Configure Web Server / Reverse Proxy (REQUIRED for production)**
+3. **Configure Web Server / Reverse Proxy**
 
-For production deployments, you MUST configure a web server (Apache or Nginx) as a reverse proxy. See the [Production Deployment](#production-deployment) section below for detailed instructions on:
-- Apache configuration (Subdirectory deployment)
-- Nginx configuration (Root domain or subdirectory)
-- SSL setup with Let's Encrypt
+**Apache is recommended** (tested and verified with subdirectory deployment).
 
-**For local testing only:** You can skip this step and access MyCloud directly at `http://localhost:6868`
+See the detailed [Reverse Proxy Configuration](#reverse-proxy-configuration) section below for complete setup instructions.
 
-4. **Launch with Docker Compose**
+4. **Build the frontend**
 ```bash
-docker-compose up -d
+cd client
+npm install
+npm run build
+cd ..
 ```
 
-5. **Access MyCloud**
+5. **Launch with Docker Compose**
+```bash
+docker compose up -d
+
+# If you get a permission error use sudo
+```
+
+6. **Access MyCloud**
 Open your browser and navigate to: `http://localhost:6868`
 
 **Default credentials:**
