@@ -1,0 +1,86 @@
+{
+  "common": {
+    "myCloud": "MyCloud",
+    "loading": "Lädt...",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "create": "Erstellen",
+    "edit": "Bearbeiten",
+    "refresh": "Aktualisieren",
+    "back": "Zurück",
+    "close": "Schließen",
+    "view": "Ansehen",
+    "download": "Herunterladen",
+    "share": "Teilen",
+    "upload": "Dateien hochladen"
+  },
+  "nav": {
+    "myFiles": "Meine Dateien",
+    "admin": "Admin",
+    "logout": "Abmelden"
+  },
+  "login": {
+    "title": "Anmelden",
+    "subtitle": "Ihre persönliche Cloud-Lösung",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "loginButton": "Anmelden",
+    "loggingIn": "Anmeldung läuft...",
+    "error": "Login fehlgeschlagen",
+    "adminNote": "Benutzer werden vom Administrator angelegt",
+    "defaultAccess": "Standard Admin-Zugang: admin / admin123"
+  },
+  "dashboard": {
+    "welcome": "Willkommen, {{username}}!",
+    "allFiles": "Alle Dateien",
+    "folder": "Ordner"
+  },
+  "fileExplorer": {
+    "newFolder": "Neuer Ordner",
+    "folderName": "Ordnername...",
+    "linkCopied": "Link wurde in die Zwischenablage kopiert!",
+    "deleteFileConfirm": "Möchten Sie diese Datei wirklich löschen?",
+    "deleteFolderConfirm": "Möchten Sie diesen Ordner wirklich löschen?",
+    "shareError": "Fehler beim Teilen der Datei",
+    "downloadError": "Fehler beim Herunterladen der Datei",
+    "deleteError": "Fehler beim Löschen",
+    "createFolderError": "Fehler beim Erstellen des Ordners",
+    "noFiles": "Keine Dateien oder Ordner vorhanden",
+    "uploadSome": "Laden Sie Dateien hoch oder erstellen Sie einen neuen Ordner",
+    "name": "Name",
+    "size": "Größe",
+    "modified": "Geändert",
+    "actions": "Aktionen"
+  },
+  "upload": {
+    "dragDrop": "Dateien hier ablegen oder klicken zum Auswählen",
+    "maxSize": "Maximale Dateigröße: {{size}}",
+    "uploading": "Wird hochgeladen...",
+    "uploadError": "Fehler beim Hochladen",
+    "quotaExceeded": "Speicherplatz überschritten"
+  },
+  "storage": {
+    "used": "{{used}} von {{total}} verwendet",
+    "almostFull": "Speicher fast voll ({{percent}}%)"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "Benutzerverwaltung",
+    "createUser": "Benutzer erstellen",
+    "newUser": "Neuen Benutzer erstellen",
+    "username": "Benutzername",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "storageQuota": "Speicherplatz (GB)",
+    "deleteConfirm": "Möchten Sie diesen Benutzer wirklich löschen?",
+    "createError": "Fehler beim Erstellen des Benutzers",
+    "deleteError": "Fehler beim Löschen des Benutzers",
+    "users": "Benutzer",
+    "storage": "Speicher",
+    "isAdmin": "Administrator",
+    "user": "Benutzer",
+    "role": "Rolle",
+    "created": "Erstellt"
+  }
+}

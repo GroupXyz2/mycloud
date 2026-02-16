@@ -1,0 +1,86 @@
+{
+  "common": {
+    "myCloud": "MyCloud",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit",
+    "refresh": "Refresh",
+    "back": "Back",
+    "close": "Close",
+    "view": "View",
+    "download": "Download",
+    "share": "Share",
+    "upload": "Upload Files"
+  },
+  "nav": {
+    "myFiles": "My Files",
+    "admin": "Admin",
+    "logout": "Logout"
+  },
+  "login": {
+    "title": "Sign In",
+    "subtitle": "Your personal cloud solution",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign In",
+    "loggingIn": "Signing in...",
+    "error": "Login failed",
+    "adminNote": "Users are created by the administrator",
+    "defaultAccess": "Default admin access: admin / admin123"
+  },
+  "dashboard": {
+    "welcome": "Welcome, {{username}}!",
+    "allFiles": "All Files",
+    "folder": "Folder"
+  },
+  "fileExplorer": {
+    "newFolder": "New Folder",
+    "folderName": "Folder name...",
+    "linkCopied": "Link copied to clipboard!",
+    "deleteFileConfirm": "Do you really want to delete this file?",
+    "deleteFolderConfirm": "Do you really want to delete this folder?",
+    "shareError": "Error sharing file",
+    "downloadError": "Error downloading file",
+    "deleteError": "Error deleting",
+    "createFolderError": "Error creating folder",
+    "noFiles": "No files or folders available",
+    "uploadSome": "Upload files or create a new folder to get started",
+    "name": "Name",
+    "size": "Size",
+    "modified": "Modified",
+    "actions": "Actions"
+  },
+  "upload": {
+    "dragDrop": "Drop files here or click to select",
+    "maxSize": "Maximum file size: {{size}}",
+    "uploading": "Uploading...",
+    "uploadError": "Upload error",
+    "quotaExceeded": "Storage quota exceeded"
+  },
+  "storage": {
+    "used": "{{used}} of {{total}} used",
+    "almostFull": "Storage almost full ({{percent}}%)"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "subtitle": "User Management",
+    "createUser": "Create User",
+    "newUser": "Create New User",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "storageQuota": "Storage Quota (GB)",
+    "deleteConfirm": "Do you really want to delete this user?",
+    "createError": "Error creating user",
+    "deleteError": "Error deleting user",
+    "users": "Users",
+    "storage": "Storage",
+    "isAdmin": "Administrator",
+    "user": "User",
+    "role": "Role",
+    "created": "Created"
+  }
+}

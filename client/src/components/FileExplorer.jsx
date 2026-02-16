@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { fileAPI } from '../api'
 import MediaViewer from './MediaViewer'
+import { useTranslation } from 'react-i18next'
 
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') 
   ? import.meta.env.BASE_URL.slice(0, -1) 
@@ -21,6 +22,7 @@ export default function FileExplorer({
   onFileDelete,
   onRefresh,
 }) {
+  const { t } = useTranslation()
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [shareUrl, setShareUrl] = useState(null)
@@ -45,7 +47,7 @@ export default function FileExplorer({
       navigator.clipboard.writeText(fullUrl)
       setTimeout(() => setShareUrl(null), 3000)
     } catch (error) {
-      alert('Fehler beim Teilen der Datei')
+      alert(t('fileExplorer.shareError'))
     }
   }
 
@@ -73,7 +75,7 @@ export default function FileExplorer({
       document.body.removeChild(a)
     } catch (error) {
       console.error('Download error:', error)
-      alert('Fehler beim Herunterladen der Datei')
+      alert(t('fileExplorer.downloadError'))
     }
   }
 
@@ -136,13 +138,13 @@ export default function FileExplorer({
             <button
               onClick={() => onFolderClick(null)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Zurück"
+              title={t('common.back')}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
           <h2 className="text-xl font-semibold text-gray-900">
-            {currentFolder ? 'Ordner' : 'Alle Dateien'}
+            {currentFolder ? t('dashboard.folder') : t('dashboard.allFiles')}
           </h2>
         </div>
 
@@ -152,14 +154,14 @@ export default function FileExplorer({
             className="btn btn-secondary flex items-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
-            Aktualisieren
+            {t('common.refresh')}
           </button>
           <button
             onClick={() => setShowNewFolder(true)}
             className="btn btn-primary flex items-center gap-2"
           >
             <FolderPlus className="w-4 h-4" />
-            Neuer Ordner
+            {t('fileExplorer.newFolder')}
           </button>
         </div>
       </div>
@@ -169,13 +171,13 @@ export default function FileExplorer({
           <input
             type="text"
             className="input flex-1"
-            placeholder="Ordnername..."
+            placeholder={t('fileExplorer.folderName')}
             value={newFolderName}
             onChange={(e) => setNewFolderName(e.target.value)}
             autoFocus
           />
           <button type="submit" className="btn btn-primary">
-            Erstellen
+            {t('common.create')}
           </button>
           <button
             type="button"
@@ -185,7 +187,7 @@ export default function FileExplorer({
             }}
             className="btn btn-secondary"
           >
-            Abbrechen
+            {t('common.cancel')}
           </button>
         </form>
       )}
@@ -193,7 +195,7 @@ export default function FileExplorer({
       {shareUrl && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
           <LinkIcon className="w-5 h-5 text-green-600" />
-          <span className="text-sm text-green-800">Link wurde in die Zwischenablage kopiert!</span>
+          <span className="text-sm text-green-800">{t('fileExplorer.linkCopied')}</span>
         </div>
       )}
 
@@ -211,7 +213,7 @@ export default function FileExplorer({
       {loading ? (
         <div className="text-center py-12">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-3" />
-          <p className="text-gray-500">Laden...</p>
+          <p className="text-gray-500">{t('common.loading')}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -232,7 +234,7 @@ export default function FileExplorer({
               <button
                 onClick={() => onFolderDelete(folder.id)}
                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Löschen"
+                title={t('common.delete')}
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -259,7 +261,7 @@ export default function FileExplorer({
                     <button
                       onClick={() => handleViewMedia(file)}
                       className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
-                      title="Ansehen"
+                      title={t('common.view') || 'View'}
                     >
                       <Eye className="w-5 h-5" />
                     </button>
@@ -267,21 +269,21 @@ export default function FileExplorer({
                   <button
                     onClick={() => handleDownload(file.id, file.original_name)}
                     className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
-                    title="Herunterladen"
+                    title={t('common.download') || 'Download'}
                   >
                     <Download className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleShare(file.id)}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                    title="Teilen"
+                    title={t('common.share') || 'Share'}
                   >
                     <Share2 className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => onFileDelete(file.id)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    title="Löschen"
+                    title={t('common.delete')}
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -293,9 +295,9 @@ export default function FileExplorer({
           {folders.length === 0 && files.length === 0 && (
             <div className="text-center py-12">
               <Folder className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">Keine Dateien oder Ordner vorhanden</p>
+              <p className="text-gray-500">{t('fileExplorer.noFiles')}</p>
               <p className="text-sm text-gray-400 mt-1">
-                Laden Sie Dateien hoch oder erstellen Sie einen neuen Ordner
+                {t('fileExplorer.uploadSome')}
               </p>
             </div>
           )}

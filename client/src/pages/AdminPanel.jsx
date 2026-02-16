@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { userAPI } from '../api'
 import Header from '../components/Header'
 import { UserPlus, Trash2, Edit, HardDrive } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function AdminPanel() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [users, setUsers] = useState([])
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newUser, setNewUser] = useState({
@@ -36,18 +38,18 @@ export default function AdminPanel() {
       setShowCreateForm(false)
       loadUsers()
     } catch (error) {
-      alert(error.response?.data?.error || 'Fehler beim Erstellen des Benutzers')
+      alert(error.response?.data?.error || t('admin.createError'))
     }
   }
 
   const handleDeleteUser = async (id) => {
-    if (!confirm('Möchten Sie diesen Benutzer wirklich löschen?')) return
+    if (!confirm(t('admin.deleteConfirm'))) return
 
     try {
       await userAPI.delete(id)
       loadUsers()
     } catch (error) {
-      alert(error.response?.data?.error || 'Fehler beim Löschen des Benutzers')
+      alert(error.response?.data?.error || t('admin.deleteError'))
     }
   }
 
@@ -66,26 +68,26 @@ export default function AdminPanel() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
-            <p className="text-gray-600 mt-1">Benutzerverwaltung</p>
+            <h1 className="text-3xl font-bold text-gray-900">{t('admin.title')}</h1>
+            <p className="text-gray-600 mt-1">{t('admin.subtitle')}</p>
           </div>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="btn btn-primary flex items-center gap-2"
           >
             <UserPlus className="w-5 h-5" />
-            Benutzer erstellen
+            {t('admin.createUser')}
           </button>
         </div>
 
         {showCreateForm && (
           <div className="card mb-6">
-            <h2 className="text-xl font-semibold mb-4">Neuen Benutzer erstellen</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('admin.newUser')}</h2>
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Benutzername
+                    {t('admin.username')}
                   </label>
                   <input
                     type="text"
@@ -97,7 +99,7 @@ export default function AdminPanel() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    E-Mail
+                    {t('admin.email')}
                   </label>
                   <input
                     type="email"
@@ -109,7 +111,7 @@ export default function AdminPanel() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Passwort
+                    {t('admin.password')}
                   </label>
                   <input
                     type="password"
@@ -121,7 +123,7 @@ export default function AdminPanel() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Speicherplatz (GB)
+                    {t('admin.storageQuota')}
                   </label>
                   <input
                     type="number"
@@ -135,14 +137,14 @@ export default function AdminPanel() {
               </div>
               <div className="flex gap-3">
                 <button type="submit" className="btn btn-primary">
-                  Benutzer erstellen
+                  {t('admin.createUser')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(false)}
                   className="btn btn-secondary"
                 >
-                  Abbrechen
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>
@@ -150,17 +152,17 @@ export default function AdminPanel() {
         )}
 
         <div className="card">
-          <h2 className="text-xl font-semibold mb-4">Benutzer ({users.length})</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('admin.users')} ({users.length})</h2>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Benutzername</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">E-Mail</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Rolle</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Speicher</th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Erstellt</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700">Aktionen</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('admin.username')}</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('admin.email')}</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('admin.role') || 'Role'}</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('admin.storage')}</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">{t('admin.created') || 'Created'}</th>
+                  <th className="text-right py-3 px-4 font-semibold text-gray-700">{t('fileExplorer.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -171,11 +173,11 @@ export default function AdminPanel() {
                     <td className="py-3 px-4">
                       {user.is_admin ? (
                         <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
-                          Admin
+                          {t('admin.isAdmin')}
                         </span>
                       ) : (
                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                          Benutzer
+                          {t('admin.user') || 'User'}
                         </span>
                       )}
                     </td>
@@ -194,7 +196,7 @@ export default function AdminPanel() {
                           <button
                             onClick={() => handleDeleteUser(user.id)}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Löschen"
+                            title={t('common.delete')}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

@@ -13,69 +13,10 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - **Docker Support** - Containerized deployment for easy setup and maintenance
 - **JWT Authentication** - Secure token-based authentication system
 
-## Quick Start with Docker and Https (For local network see below)
-
-For the public or online use, or in production
-
-### Prerequisites
-- Docker and Docker Compose installed
-- Letsencrypt or other certificate service installed
-- Apache2 or Nginx installed
-- Minimum 1GB available storage space
-
-### Installation
-
-1. **Navigate to the project directory**
-```bash
-cd mycloud
-```
-
-2. **Configure environment variables**
-```bash
-cp .env.example .env
-```
-
-⚠️ **IMPORTANT:** You MUST edit `.env` before proceeding!
-
-**Required changes:**
-- `JWT_SECRET` - Set a strong, random secret key (minimum 32 characters)
-- `ADMIN_PASSWORD` - Set a secure administrator password
-
-Example of generating a secure JWT_SECRET:
-```bash
-openssl rand -base64 32
-
-# Or use any random string generator
-```
-
-3. **Configure Web Server / Reverse Proxy**
-- Apache Web Server is tested, Nginx should work too.
-- Generate Certificates with Letsencrypt
-- See the detailed [Web Server Configuration](#option-a-apache-subdirectory-deployment---tested--verified) section below for complete setup instructions.
-
-4. **Build the frontend**
-```bash
-cd client
-npm install
-npm run build
-cd ..
-```
-
-5. **Launch with Docker Compose**
-```bash
-sudo docker compose up -d
-```
-
-6. **Access MyCloud**
-Open your browser and navigate to: `https://yourdomain.com/cloud`
-
-**Default credentials:**
-- Username: `admin`
-- Password: `admin123` (or the value set in `.env`)
-
-## Quick Start for Local Network
-
+## Quick Start for Local Network use. 
 For home networks with direct access without HTTPS or reverse proxy complexity.
+
+See here for [Production/Online use Configuration](#quick-start-for-online-use-with-docker-and-https)
 
 ### Prerequisites
 - Docker and Docker Compose installed
@@ -188,6 +129,66 @@ docker compose -f docker-compose.local.yml up -d --build
 - **Router DNS:** Consider adding a DNS entry in your router for easier access
 - **Security:** This setup uses HTTP (not HTTPS). Only use within trusted local networks
 - **Port Forwarding:** Do NOT expose port 6868 to the internet without proper security measures
+
+## Quick Start for online use with Docker and Https
+
+For the public or online use, or in production
+
+### Prerequisites
+- Docker and Docker Compose installed
+- Letsencrypt or other certificate service installed
+- Apache2 or Nginx installed
+- Minimum 1GB available storage space
+
+### Installation
+
+1. **Navigate to the project directory**
+```bash
+cd mycloud
+```
+
+2. **Configure environment variables**
+```bash
+cp .env.example .env
+```
+
+⚠️ **IMPORTANT:** You MUST edit `.env` before proceeding!
+
+**Required changes:**
+- `JWT_SECRET` - Set a strong, random secret key (minimum 32 characters)
+- `ADMIN_PASSWORD` - Set a secure administrator password
+
+Example of generating a secure JWT_SECRET:
+```bash
+openssl rand -base64 32
+
+# Or use any random string generator
+```
+
+3. **Configure Web Server / Reverse Proxy**
+- Apache Web Server is tested, Nginx should work too.
+- Generate Certificates with Letsencrypt
+- See the detailed [Web Server Configuration](#option-a-apache-subdirectory-deployment---tested--verified) section below for complete setup instructions.
+
+4. **Build the frontend**
+```bash
+cd client
+npm install
+npm run build
+cd ..
+```
+
+5. **Launch with Docker Compose**
+```bash
+sudo docker compose up -d
+```
+
+6. **Access MyCloud**
+Open your browser and navigate to: `https://yourdomain.com/cloud`
+
+**Default credentials:**
+- Username: `admin`
+- Password: `admin123` (or the value set in `.env`)
 
 ## Manual Installation (without Docker)
 

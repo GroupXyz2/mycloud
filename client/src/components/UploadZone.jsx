@@ -2,8 +2,10 @@ import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { fileAPI } from '../api'
 import { Upload, X, CheckCircle, AlertCircle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 export default function UploadZone({ currentFolder, onUploadComplete }) {
+  const { t } = useTranslation()
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState({})
   const [uploadedFiles, setUploadedFiles] = useState([])
@@ -32,7 +34,7 @@ export default function UploadZone({ currentFolder, onUploadComplete }) {
       } catch (error) {
         setErrors((prev) => [...prev, { 
           file: file.name, 
-          error: error.response?.data?.error || 'Upload fehlgeschlagen' 
+          error: error.response?.data?.error || t('upload.uploadError') 
         }])
       }
     }
@@ -44,7 +46,7 @@ export default function UploadZone({ currentFolder, onUploadComplete }) {
       setErrors([])
       onUploadComplete()
     }, 3000)
-  }, [currentFolder, onUploadComplete])
+  }, [currentFolder, onUploadComplete, t])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 
@@ -61,14 +63,14 @@ export default function UploadZone({ currentFolder, onUploadComplete }) {
         <input {...getInputProps()} />
         <Upload className={`w-16 h-16 mx-auto mb-4 ${isDragActive ? 'text-primary-600' : 'text-gray-400'}`} />
         {isDragActive ? (
-          <p className="text-lg font-medium text-primary-600">Dateien hier ablegen...</p>
+          <p className="text-lg font-medium text-primary-600">{t('upload.uploading')}</p>
         ) : (
           <>
             <p className="text-lg font-medium text-gray-700 mb-2">
-              Dateien hochladen
+              {t('common.upload') || 'Upload Files'}
             </p>
             <p className="text-sm text-gray-500">
-              Klicken Sie hier oder ziehen Sie Dateien per Drag & Drop
+              {t('upload.dragDrop')}
             </p>
           </>
         )}

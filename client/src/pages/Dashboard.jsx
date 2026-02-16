@@ -6,10 +6,12 @@ import Header from '../components/Header'
 import FileExplorer from '../components/FileExplorer'
 import UploadZone from '../components/UploadZone'
 import StorageBar from '../components/StorageBar'
+import { useTranslation } from 'react-i18next'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
+  const { t } = useTranslation()
   const [files, setFiles] = useState([])
   const [folders, setFolders] = useState([])
   const [currentFolder, setCurrentFolder] = useState(null)
@@ -52,14 +54,14 @@ export default function Dashboard() {
   }
 
   const handleFileDelete = async (fileId) => {
-    if (!confirm('Möchten Sie diese Datei wirklich löschen?')) return
+    if (!confirm(t('fileExplorer.deleteFileConfirm'))) return
 
     try {
       await fileAPI.delete(fileId)
       loadData()
       loadStorageStats()
     } catch (error) {
-      alert('Fehler beim Löschen der Datei')
+      alert(t('fileExplorer.deleteError'))
     }
   }
 
@@ -68,18 +70,18 @@ export default function Dashboard() {
       await folderAPI.create({ name, parent_id: currentFolder })
       loadData()
     } catch (error) {
-      alert('Fehler beim Erstellen des Ordners')
+      alert(t('fileExplorer.createFolderError'))
     }
   }
 
   const handleFolderDelete = async (folderId) => {
-    if (!confirm('Möchten Sie diesen Ordner wirklich löschen?')) return
+    if (!confirm(t('fileExplorer.deleteFolderConfirm'))) return
 
     try {
       await folderAPI.delete(folderId)
       loadData()
     } catch (error) {
-      alert('Fehler beim Löschen des Ordners')
+      alert(t('fileExplorer.deleteError'))
     }
   }
 
@@ -90,7 +92,7 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Willkommen, {user?.username}!
+            {t('dashboard.welcome', { username: user?.username })}
           </h1>
           {storageStats && (
             <StorageBar 
