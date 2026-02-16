@@ -13,7 +13,9 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - **Docker Support** - Containerized deployment for easy setup and maintenance
 - **JWT Authentication** - Secure token-based authentication system
 
-## Quick Start with Docker and Https
+## Quick Start with Docker and Https (For local network see below)
+
+For the public or online use, or in production
 
 ### Prerequisites
 - Docker and Docker Compose installed
@@ -37,7 +39,7 @@ cp .env.example .env
 
 **Required changes:**
 - `JWT_SECRET` - Set a strong, random secret key (minimum 32 characters)
-- `ADMIN_PASSWORD` - Set a secure administrator password (NOT "admin123")
+- `ADMIN_PASSWORD` - Set a secure administrator password
 
 Example of generating a secure JWT_SECRET:
 ```bash
@@ -70,6 +72,122 @@ Open your browser and navigate to: `https://yourdomain.com/cloud`
 **Default credentials:**
 - Username: `admin`
 - Password: `admin123` (or the value set in `.env`)
+
+## Quick Start for Local Network
+
+For home networks with direct access without HTTPS or reverse proxy complexity.
+
+### Prerequisites
+- Docker and Docker Compose installed
+- Network-connected device (Raspberry Pi, server, or desktop)
+- Minimum 1GB available storage space
+
+### Installation
+
+1. **Navigate to the project directory**
+```bash
+cd mycloud
+```
+
+2. **Create a local network configuration**
+```bash
+cp .env.local.example .env
+nano .env
+```
+
+⚠️ **IMPORTANT:** You MUST edit `.env` before proceeding!
+
+**Required changes:**
+- `JWT_SECRET` - Set a strong, random secret key (minimum 32 characters)
+- `ADMIN_PASSWORD` - Set a secure administrator password
+
+Generate a secure JWT_SECRET:
+```bash
+openssl rand -base64 32
+```
+
+3. **Build and launch**
+```bash
+sudo docker compose -f docker-compose.local.yml up -d --build
+```
+
+4. **Find your device's IP address**
+```bash
+# On Linux/Mac
+hostname -I | awk '{print $1}'
+
+# Or
+ip addr show | grep "inet " | grep -v 127.0.0.1
+```
+
+5. **Access MyCloud from any device on your network**
+
+Open a browser and navigate to:
+- `http://[YOUR-IP]:6868` (e.g., `http://192.168.1.100:6868`)
+- OR `http://[HOSTNAME].local:6868` (e.g., `http://pi5.local:6868`)
+
+**Default credentials:**
+- Username: `admin`
+- Password: `admin123` (or the value you set in `.env`)
+
+### Optional: Set a Static IP Address
+
+For consistent access, configure a static IP on your device:
+
+**On Raspberry Pi/Ubuntu:**
+```bash
+# Edit netplan configuration
+sudo nano /etc/netplan/01-netcfg.yaml
+```
+
+Example configuration:
+```yaml
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: no
+      addresses:
+        - 192.168.1.100/24
+      gateway4: 192.168.1.1
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1]
+```
+
+Apply changes:
+```bash
+sudo netplan apply
+```
+
+### Management Commands
+
+```bash
+# View logs
+docker compose -f docker-compose.local.yml logs -f
+
+# Restart
+docker compose -f docker-compose.local.yml restart
+
+# Stop
+docker compose -f docker-compose.local.yml down
+
+# Update and rebuild
+docker compose -f docker-compose.local.yml down
+docker compose -f docker-compose.local.yml up -d --build
+```
+
+### Accessing from Mobile Devices
+
+1. Ensure your mobile device is on the same WiFi network
+2. Open browser and navigate to `http://[YOUR-IP]:6868`
+3. Add to home screen for quick access (works like a native app)
+
+### Network Considerations
+
+- **Firewall:** Ensure port 6868 is open if using a firewall
+- **Router DNS:** Consider adding a DNS entry in your router for easier access
+- **Security:** This setup uses HTTP (not HTTPS). Only use within trusted local networks
+- **Port Forwarding:** Do NOT expose port 6868 to the internet without proper security measures
 
 ## Manual Installation (without Docker)
 
