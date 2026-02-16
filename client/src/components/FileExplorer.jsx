@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { 
   File, Folder, Download, Trash2, Share2, FolderPlus, 
-  RefreshCw, ChevronLeft, MoreVertical, Link as LinkIcon 
+  RefreshCw, ChevronLeft, MoreVertical, Link as LinkIcon, Eye, Image as ImageIcon, Video 
 } from 'lucide-react'
 import { fileAPI } from '../api'
+import MediaViewer from './MediaViewer'
 
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') 
   ? import.meta.env.BASE_URL.slice(0, -1) 
@@ -23,6 +24,8 @@ export default function FileExplorer({
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [shareUrl, setShareUrl] = useState(null)
+  const [viewingMedia, setViewingMedia] = useState(null)
+  const [mediaFiles, setMediaFiles] = useState([])
 
   const handleCreateFolder = (e) => {
     e.preventDefault()
@@ -96,11 +99,35 @@ export default function FileExplorer({
 
   const getFileIcon = (mimeType) => {
     if (!mimeType) return File
-    if (mimeType.startsWith('image/')) return File
-    if (mimeType.startsWith('video/')) return File
+    if (mimeType.startsWith('image/')) return ImageIcon
+    if (mimeType.startsWith('video/')) return Video
     if (mimeType.startsWith('audio/')) return File
     if (mimeType.includes('pdf')) return File
     return File
+  }
+
+  const isMediaFile = (mimeType) => {
+    return mimeType?.startsWith('image/') || mimeType?.startsWith('video/')
+  }
+
+  const handleViewMedia = (file) => {
+    const mediaFilesList = files.filter(f => isMediaFile(f.mime_type))
+    setMediaFiles(mediaFilesList)
+    setViewingMedia(file)
+  }
+
+  const handleNextMedia = () => {
+    const currentIndex = mediaFiles.findIndex(f => f.id === viewingMedia.id)
+    if (currentIndex < mediaFiles.length - 1) {
+      setViewingMedia(mediaFiles[currentIndex + 1])
+    }
+  }
+
+  const handlePreviousMedia = () => {
+    const currentIndex = mediaFiles.findIndex(f => f.id === viewingMedia.id)
+    if (currentIndex > 0) {
+      setViewingMedia(mediaFiles[currentIndex - 1])
+    }
   }
 
   return (
@@ -172,6 +199,17 @@ export default function FileExplorer({
         </div>
       )}
 
+      {viewingMedia && (
+        <MediaViewer
+          file={viewingMedia}
+          onClose={() => setViewingMedia(null)}
+          onNext={handleNextMedia}
+          onPrevious={handlePreviousMedia}
+          hasNext={mediaFiles.findIndex(f => f.id === viewingMedia.id) < mediaFiles.length - 1}
+          hasPrevious={mediaFiles.findIndex(f => f.id === viewingMedia.id) > 0}
+        />
+      )}
+
       {loading ? (
         <div className="text-center py-12">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-3" />
@@ -219,6 +257,15 @@ export default function FileExplorer({
                   </p>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isMediaFile(file.mime_type) && (
+                    <button
+                      onClick={() => handleViewMedia(file)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                      title="Ansehen"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDownload(file.id, file.original_name)}
                     className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"

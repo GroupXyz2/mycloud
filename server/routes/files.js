@@ -128,6 +128,36 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
   }
 });
 
+// View file (streaming for images/videos)
+router.get('/:id/view', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const file = await getQuery(
+      `SELECT f.*, sf.permission 
+       FROM files f
+       LEFT JOIN shared_files sf ON f.id = sf.file_id AND sf.shared_with_user_id = ?
+       WHERE f.id = ? AND (f.user_id = ? OR sf.shared_with_user_id = ?)`,
+      [req.user.id, id, req.user.id, req.user.id]
+    );
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set appropriate headers for media streaming
+    res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
+    res.setHeader('Content-Length', file.size);
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    // Send file
+    res.sendFile(file.path);
+  } catch (error) {
+    console.error('View error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Download file
 router.get('/:id/download', authenticateToken, async (req, res) => {
   try {

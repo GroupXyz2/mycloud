@@ -26,14 +26,24 @@ Eine vollständige, selbst gehostete Cloud-Speicherlösung mit admin-verwaltetem
 cd mycloud
 ```
 
-2. **Umgebungsvariablen konfigurieren**
+2. **Umgebungsvariablen konfigurieren (KRITISCHER SCHRITT!)**
 ```bash
 cp .env.example .env
 ```
 
-Bearbeiten Sie `.env` und ändern Sie mindestens:
-- `JWT_SECRET` - Wählen Sie einen starken Geheimschlüssel
-- `ADMIN_PASSWORD` - Setzen Sie ein sicheres Admin-Passwort
+⚠️ **WICHTIG:** Sie müssen die `.env`-Datei bearbeiten, bevor Sie fortfahren!
+
+**Erforderliche Änderungen:**
+- `JWT_SECRET` - Setzen Sie einen starken, zufälligen Geheimschlüssel (mindestens 32 Zeichen)
+- `ADMIN_PASSWORD` - Setzen Sie ein sicheres Administrator-Passwort (NICHT "admin123")
+
+Beispiel für die Generierung eines sicheren JWT_SECRET:
+```bash
+# Linux/Mac:
+openssl rand -base64 32
+
+# Oder verwenden Sie einen beliebigen Zufallsstring-Generator
+```
 
 3. **Mit Docker Compose starten**
 ```bash
@@ -60,11 +70,14 @@ docker-compose up -d
 npm install
 ```
 
-2. **Umgebungsvariablen konfigurieren**
+2. **Umgebungsvariablen konfigurieren (KRITISCHER SCHRITT!)**
 ```bash
 cp .env.example .env
-# Bearbeiten Sie .env nach Bedarf
 ```
+
+⚠️ **WICHTIG:** Bearbeiten Sie `.env` und ändern Sie mindestens:
+- `JWT_SECRET` - Starker Geheimschlüssel (mindestens 32 Zeichen)
+- `ADMIN_PASSWORD` - Sicheres Passwort (NICHT "admin123")
 
 3. **Server starten**
 ```bash
@@ -186,10 +199,18 @@ ssh user@your-server.com
 cd mycloud
 ```
 
-3. **.env konfigurieren**
+3. **Umgebung konfigurieren (KRITISCH - NICHT ÜBERSPRINGEN!)**
 ```bash
 nano .env
-# Setzen Sie sichere Werte für JWT_SECRET und ADMIN_PASSWORD
+```
+
+⚠️ **PRODUKTIONS-SICHERHEIT:** Sie MÜSSEN diese Werte ändern:
+- `JWT_SECRET` - Verwenden Sie eine starke Zufallszeichenfolge (mindestens 32 Zeichen)
+- `ADMIN_PASSWORD` - Verwenden Sie ein sicheres Passwort
+
+Sicheren JWT_SECRET generieren:
+```bash
+openssl rand -base64 32
 ```
 
 4. **Docker Container starten**
@@ -197,10 +218,67 @@ nano .env
 docker-compose up -d
 ```
 
-5. **Nginx Reverse Proxy (Optional)**
+5. **Reverse Proxy konfigurieren (Optional)**
 
-Erstellen Sie `/etc/nginx/sites-available/mycloud`:
+Sie können MyCloud entweder im Root einer Domain oder in einem Unterverzeichnis bereitstellen.
 
+#### Option A: Apache (Unterverzeichnis-Deployment - Getestet & Verifiziert)
+
+Diese Konfiguration stellt MyCloud unter `https://ihre-domain.de/cloud` bereit
+
+**Erforderliche Apache-Module aktivieren:**
+```bash
+sudo a2enmod proxy proxy_http rewrite headers ssl
+sudo systemctl restart apache2
+```
+
+**Zu Ihrer Apache VirtualHost-Konfiguration hinzufügen:**
+```apache
+<VirtualHost *:443>
+    ServerName ihre-domain.de
+
+    # SSL Konfiguration (bei Verwendung von Let's Encrypt)
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/ihre-domain.de/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/ihre-domain.de/privkey.pem
+    Include /etc/letsencrypt/options-ssl-apache.conf
+
+    # MyCloud Proxy Konfiguration
+    ProxyPreserveHost On
+    ProxyRequests Off
+
+    # Große Datei-Uploads erlauben (500MB)
+    LimitRequestBody 524288000
+
+    # Rewrite Engine für MyCloud
+    RewriteEngine On
+
+    # Alle /cloud/* Anfragen zum Backend weiterleiten
+    RewriteCond %{REQUEST_URI} ^/cloud
+    RewriteRule ^/cloud/?(.*) http://localhost:6868/$1 [P,L]
+
+    ProxyPassReverse /cloud http://localhost:6868/
+
+    <Location /cloud>
+        RequestHeader set X-Forwarded-Proto "https"
+        RequestHeader set X-Real-IP %{REMOTE_ADDR}s
+        RequestHeader set X-Forwarded-For %{REMOTE_ADDR}s
+    </Location>
+</VirtualHost>
+```
+
+**Apache neu starten:**
+```bash
+sudo systemctl restart apache2
+```
+
+Zugriff auf MyCloud unter: `https://ihre-domain.de/cloud`
+
+#### Option B: Nginx (Root-Domain-Deployment)
+
+Diese Konfiguration stellt MyCloud unter `https://cloud.ihre-domain.de` bereit
+
+**Erstellen Sie `/etc/nginx/sites-available/mycloud`:**
 ```nginx
 server {
     listen 80;
@@ -217,15 +295,44 @@ server {
         proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
 
-Aktivieren und SSL mit Let's Encrypt:
+**Site aktivieren und SSL mit Let's Encrypt einrichten:**
 ```bash
 sudo ln -s /etc/nginx/sites-available/mycloud /etc/nginx/sites-enabled/
 sudo certbot --nginx -d cloud.ihre-domain.de
 sudo systemctl reload nginx
+```
+
+Zugriff auf MyCloud unter: `https://cloud.ihre-domain.de`
+
+#### Option C: Nginx (Unterverzeichnis-Deployment)
+
+Diese Konfiguration stellt MyCloud unter `https://ihre-domain.de/cloud` bereit
+
+```nginx
+server {
+    listen 80;
+    server_name ihre-domain.de;
+
+    client_max_body_size 500M;
+
+    location /cloud {
+        rewrite ^/cloud/(.*) /$1 break;
+        proxy_pass http://localhost:6868;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 ```
 
 ### Container-Management
@@ -303,10 +410,6 @@ Die Anwendung verwendet SQLite für einfaches Deployment. Die Datenbank wird aut
 ### Problem: "Database locked"
 - SQLite unterstützt nur einen Schreibzugriff gleichzeitig
 - Bei hoher Last zu PostgreSQL/MySQL migrieren
-
-## 📝 Lizenz
-
-MIT License - Frei verwendbar für private und kommerzielle Projekte
 
 ## 🤝 Support
 
