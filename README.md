@@ -46,10 +46,8 @@ openssl rand -base64 32
 ```
 
 3. **Configure Web Server / Reverse Proxy**
-
-**Apache is recommended** (tested and verified with subdirectory deployment).
-
-See the detailed [Reverse Proxy Configuration](#reverse-proxy-configuration) section below for complete setup instructions.
+- Apache is recommended.
+- See the detailed [Reverse Proxy Configuration](#reverse-proxy-configuration) section below for complete setup instructions.
 
 4. **Build the frontend**
 ```bash
