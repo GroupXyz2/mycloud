@@ -34,7 +34,7 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - [Support](#support)
 - [Contributing](#contributing)
 
-## Quick Start for Local Network use. 
+## Quick Start for Local Network use
 For home networks with direct access without HTTPS or reverse proxy complexity.
 
 See here for [Production/Online use Configuration](#quick-start-for-online-use-with-docker-and-https)
