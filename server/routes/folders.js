@@ -4,7 +4,6 @@ const { runQuery, getQuery, allQuery } = require('../database/init');
 
 const router = express.Router();
 
-// Get all folders for current user
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { parent_id } = req.query;
@@ -29,7 +28,6 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Create folder
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const { name, parent_id } = req.body;
@@ -38,7 +36,6 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Folder name required' });
     }
 
-    // Build path
     let path = '/' + name;
     if (parent_id) {
       const parent = await getQuery(
@@ -53,7 +50,6 @@ router.post('/', authenticateToken, async (req, res) => {
       path = parent.path + '/' + name;
     }
 
-    // Check if folder already exists
     const existing = await getQuery(
       'SELECT id FROM folders WHERE user_id = ? AND path = ?',
       [req.user.id, path]
@@ -81,7 +77,6 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Rename folder
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -100,7 +95,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Folder not found' });
     }
 
-    // Build new path
     const oldPath = folder.path;
     const pathParts = oldPath.split('/');
     pathParts[pathParts.length - 1] = name;
@@ -111,7 +105,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
       [name, newPath, id]
     );
 
-    // Update child folder paths
     await runQuery(
       `UPDATE folders SET path = REPLACE(path, ?, ?) WHERE path LIKE ? AND user_id = ?`,
       [oldPath, newPath, oldPath + '/%', req.user.id]
@@ -124,7 +117,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Delete folder
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -138,7 +130,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Folder not found' });
     }
 
-    // Delete folder and all children (CASCADE)
     await runQuery('DELETE FROM folders WHERE id = ?', [id]);
 
     res.json({ message: 'Folder deleted successfully' });
@@ -148,7 +139,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Get folder tree
 router.get('/tree', authenticateToken, async (req, res) => {
   try {
     const folders = await allQuery(
@@ -156,7 +146,6 @@ router.get('/tree', authenticateToken, async (req, res) => {
       [req.user.id]
     );
 
-    // Build tree structure
     const tree = [];
     const folderMap = {};
 

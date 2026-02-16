@@ -39,8 +39,6 @@ export default function FileExplorer({
   const handleShare = async (fileId) => {
     try {
       const response = await fileAPI.share(fileId, {})
-      // shareUrl kommt vom Backend als /api/files/public/token
-      // Wir müssen den BASE_PATH hinzufügen
       const backendUrl = response.data.shareUrl
       const fullUrl = `${window.location.origin}${BASE_PATH}${backendUrl}`
       setShareUrl(fullUrl)

@@ -5,7 +5,6 @@ const { runQuery, getQuery, allQuery } = require('../database/init');
 
 const router = express.Router();
 
-// Get all users (Admin only)
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const users = await allQuery(`
@@ -20,7 +19,6 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Create user (Admin only)
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { username, email, password, storageQuota } = req.body;
@@ -39,7 +37,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const quota = storageQuota || 10737418240; // 10GB default
+    const quota = storageQuota || 10737418240; // 10GB
 
     const result = await runQuery(
       'INSERT INTO users (username, email, password, storage_quota) VALUES (?, ?, ?, ?)',
@@ -58,7 +56,6 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Update user (Admin only)
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -107,7 +104,6 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Delete user (Admin only)
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
@@ -129,7 +125,6 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Get current user storage stats
 router.get('/me/storage', authenticateToken, async (req, res) => {
   try {
     const user = await getQuery(

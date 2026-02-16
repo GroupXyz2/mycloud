@@ -14,7 +14,6 @@ const { initDatabase } = require('./database/init');
 const app = express();
 const PORT = process.env.PORT || 6868;
 
-// Middleware
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -25,16 +24,13 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/folders', folderRoutes);
 
-// Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_PATH || './data/uploads'));
 
-// Serve static frontend files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
   app.get('*', (req, res) => {
@@ -42,7 +38,6 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
@@ -50,7 +45,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize database and start server
 initDatabase()
   .then(() => {
     app.listen(PORT, () => {

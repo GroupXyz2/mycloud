@@ -44,12 +44,10 @@ function allQuery(query, params = []) {
 
 async function initDatabase() {
   try {
-    // Create data directories
     const dataDir = path.dirname(DB_PATH);
     await fs.mkdir(dataDir, { recursive: true });
     await fs.mkdir(UPLOAD_PATH, { recursive: true });
 
-    // Create tables
     await runQuery(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,13 +106,11 @@ async function initDatabase() {
       )
     `);
 
-    // Create indexes
     await runQuery('CREATE INDEX IF NOT EXISTS idx_files_user ON files(user_id)');
     await runQuery('CREATE INDEX IF NOT EXISTS idx_folders_user ON folders(user_id)');
     await runQuery('CREATE INDEX IF NOT EXISTS idx_files_folder ON files(folder_id)');
     await runQuery('CREATE INDEX IF NOT EXISTS idx_share_token ON files(share_token)');
 
-    // Create admin user if it doesn't exist
     const adminExists = await getQuery('SELECT id FROM users WHERE is_admin = 1');
     
     if (!adminExists) {

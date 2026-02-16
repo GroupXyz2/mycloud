@@ -6,7 +6,6 @@ const { getQuery } = require('../database/init');
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Login
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -53,7 +52,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Verify token
 router.get('/verify', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];

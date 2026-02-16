@@ -1,259 +1,268 @@
-# MyCloud - Moderne Self-Hosted Cloud-Lösung
+# MyCloud - Self-Hosted Cloud Storage Solution
 
-Eine vollständige, selbst gehostete Cloud-Speicherlösung mit admin-verwaltetem Benutzersystem, Datei-Upload/Download, Ordnerverwaltung und modernem UI.
+A comprehensive, self-hosted cloud storage platform with admin-managed user system, file upload/download capabilities, folder management, and a modern user interface.
 
-## ✨ Features
+## Features
 
-- 🔐 **Admin-verwaltete Benutzer** - Keine E-Mail-Verifikation, Admins legen Benutzer an
-- 📁 **Datei-Management** - Upload, Download, Löschen von Dateien
-- 📂 **Ordner-Struktur** - Organisieren Sie Dateien in Ordnern
-- 🔗 **Datei-Sharing** - Teilen Sie Dateien über öffentliche Links
-- 💾 **Speicher-Quotas** - Individuelle Speicherlimits pro Benutzer
-- 🎨 **Modernes UI** - React + Tailwind CSS Interface
-- 🐳 **Docker-Ready** - Einfaches Deployment auf jedem Server
-- 🔒 **JWT Authentifizierung** - Sichere Token-basierte Authentifizierung
+- **Admin-Managed Users** - Streamlined user management without email verification requirements
+- **File Management** - Complete file lifecycle management including upload, download, and deletion
+- **Folder Organization** - Hierarchical folder structure for efficient file organization
+- **File Sharing** - Share files securely via public links
+- **Storage Quotas** - Configurable storage limits per user
+- **Modern Interface** - Built with React and Tailwind CSS for a responsive, intuitive experience
+- **Docker Support** - Containerized deployment for easy setup and maintenance
+- **JWT Authentication** - Secure token-based authentication system
 
-## 🚀 Schnellstart mit Docker
+## Quick Start with Docker
 
-### Voraussetzungen
-- Docker & Docker Compose installiert
-- Mindestens 1GB freier Speicherplatz
+### Prerequisites
+- Docker and Docker Compose installed
+- Minimum 1GB available storage space
 
 ### Installation
 
-1. **Repository klonen oder herunterladen**
+1. **Navigate to the project directory**
 ```bash
 cd mycloud
 ```
 
-2. **Umgebungsvariablen konfigurieren (KRITISCHER SCHRITT!)**
+2. **Configure environment variables**
 ```bash
 cp .env.example .env
 ```
 
-⚠️ **WICHTIG:** Sie müssen die `.env`-Datei bearbeiten, bevor Sie fortfahren!
+⚠️ **IMPORTANT:** You MUST edit `.env` before proceeding!
 
-**Erforderliche Änderungen:**
-- `JWT_SECRET` - Setzen Sie einen starken, zufälligen Geheimschlüssel (mindestens 32 Zeichen)
-- `ADMIN_PASSWORD` - Setzen Sie ein sicheres Administrator-Passwort (NICHT "admin123")
+**Required changes:**
+- `JWT_SECRET` - Set a strong, random secret key (minimum 32 characters)
+- `ADMIN_PASSWORD` - Set a secure administrator password (NOT "admin123")
 
-Beispiel für die Generierung eines sicheren JWT_SECRET:
+Example of generating a secure JWT_SECRET:
 ```bash
 # Linux/Mac:
 openssl rand -base64 32
 
-# Oder verwenden Sie einen beliebigen Zufallsstring-Generator
+# Or use any random string generator
 ```
 
-3. **Mit Docker Compose starten**
+3. **Configure Web Server / Reverse Proxy (REQUIRED for production)**
+
+For production deployments, you MUST configure a web server (Apache or Nginx) as a reverse proxy. See the [Production Deployment](#production-deployment) section below for detailed instructions on:
+- Apache configuration (Subdirectory deployment)
+- Nginx configuration (Root domain or subdirectory)
+- SSL setup with Let's Encrypt
+
+**For local testing only:** You can skip this step and access MyCloud directly at `http://localhost:6868`
+
+4. **Launch with Docker Compose**
 ```bash
 docker-compose up -d
 ```
 
-4. **Zugriff auf MyCloud**
-Öffnen Sie Ihren Browser und navigieren zu: `http://localhost:6868`
+5. **Access MyCloud**
+Open your browser and navigate to: `http://localhost:6868`
 
-**Standard-Login:**
-- Benutzername: `admin`
-- Passwort: `admin123` (oder was Sie in `.env` gesetzt haben)
+**Default credentials:**
+- Username: `admin`
+- Password: `admin123` (or the value set in `.env`)
 
-## 🛠️ Manuelle Installation (ohne Docker)
+## Manual Installation (without Docker)
 
-### Voraussetzungen
-- Node.js 18 oder höher
-- npm oder yarn
+### Prerequisites
+- Node.js 18 or higher
+- npm or yarn
 
 ### Backend Setup
 
-1. **Dependencies installieren**
+1. **Install dependencies**
 ```bash
 npm install
 ```
 
-2. **Umgebungsvariablen konfigurieren (KRITISCHER SCHRITT!)**
+2. **Configure environment (CRITICAL STEP!)**
 ```bash
 cp .env.example .env
 ```
 
-⚠️ **WICHTIG:** Bearbeiten Sie `.env` und ändern Sie mindestens:
-- `JWT_SECRET` - Starker Geheimschlüssel (mindestens 32 Zeichen)
-- `ADMIN_PASSWORD` - Sicheres Passwort (NICHT "admin123")
+⚠️ **SECURITY WARNING:** Edit `.env` and change at minimum:
+- `JWT_SECRET` - Strong secret key (minimum 32 characters)
+- `ADMIN_PASSWORD` - Secure password (NOT "admin123")
 
-3. **Server starten**
+3. **Start the server**
 ```bash
 npm start
 ```
 
-Der Server läuft nun auf `http://localhost:6868`
+The server will be available at `http://localhost:6868`
 
 ### Frontend Development
 
-1. **In das Client-Verzeichnis wechseln**
+1. **Navigate to client directory**
 ```bash
 cd client
 ```
 
-2. **Dependencies installieren**
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-3. **Development Server starten**
+3. **Start development server**
 ```bash
 npm run dev
 ```
 
-Das Frontend läuft auf `http://localhost:6869` mit Hot-Reload
+The frontend will be available at `http://localhost:6869` with hot-reload enabled
 
 ### Production Build
 
 ```bash
-# Frontend bauen
+# Build frontend
 cd client
 npm run build
 
-# Server im Production-Modus starten
+# Start server in production mode
 cd ..
 NODE_ENV=production npm start
 ```
 
-## 📋 Verwendung
+## Usage Guide
 
-### Als Admin
+### Administrator Functions
 
-1. **Login** mit Admin-Credentials
-2. **Navigieren Sie zu Admin Panel** (Settings-Icon in der Header)
-3. **Benutzer erstellen:**
-   - Klicken Sie auf "Benutzer erstellen"
-   - Füllen Sie Benutzername, E-Mail, Passwort aus
-   - Setzen Sie Speicher-Quota (in GB)
-   - Klicken Sie auf "Benutzer erstellen"
+1. **Login** with admin credentials
+2. **Access Admin Panel** via the settings icon in the header
+3. **Create Users:**
+   - Click "Create User"
+   - Enter username, email, and password
+   - Set storage quota (in GB)
+   - Click "Create User"
 
-4. **Benutzer verwalten:**
-   - Sehen Sie alle Benutzer und deren Speichernutzung
-   - Löschen Sie Benutzer bei Bedarf
+4. **Manage Users:**
+   - View all users and their storage utilization
+   - Delete users as needed
 
-### Als Benutzer
+### User Functions
 
-1. **Login** mit vom Admin zugewiesenen Credentials
-2. **Dateien hochladen:**
-   - Drag & Drop in die Upload-Zone
-   - Oder klicken und Dateien auswählen
-   
-3. **Ordner erstellen:**
-   - Klicken Sie auf "Neuer Ordner"
-   - Geben Sie einen Namen ein
-   
-4. **Dateien verwalten:**
-   - **Download:** Klicken Sie auf Download-Icon
-   - **Teilen:** Klicken Sie auf Share-Icon (Link wird kopiert)
-   - **Löschen:** Klicken Sie auf Papierkorb-Icon
-   
-5. **Navigation:**
-   - Klicken Sie auf Ordner zum Öffnen
-   - Klicken Sie auf Zurück-Pfeil für übergeordneten Ordner
+1. **Login** with credentials provided by administrator
+2. **Upload Files:**
+   - Drag and drop files into the upload zone
+   - Or click to select files manually
 
-## 🔧 Konfiguration
+3. **Create Folders:**
+   - Click "New Folder"
+   - Enter folder name
 
-### Umgebungsvariablen (.env)
+4. **Manage Files:**
+   - **Download:** Click the download icon
+   - **Share:** Click the share icon (link copied to clipboard)
+   - **Delete:** Click the trash icon
+
+5. **Navigate:**
+   - Click folders to open them
+   - Click the back arrow to navigate to parent folder
+
+## Configuration
+
+### Environment Variables (.env)
 
 ```env
-# Server
-PORT=6868                    # Server Port
-NODE_ENV=production          # production oder development
+# Server Configuration
+PORT=6868                    # Server port
+NODE_ENV=production          # Environment: production or development
 
-# Sicherheit
-JWT_SECRET=your-secret-key   # WICHTIG: Ändern Sie dies!
+# Security
+JWT_SECRET=your-secret-key   # CRITICAL: Change this in production!
 
-# Datenbank
+# Database
 DB_PATH=./data/database.sqlite
 
-# Datei-Speicher
+# File Storage
 UPLOAD_PATH=./data/uploads
-MAX_FILE_SIZE=524288000      # 500MB in Bytes
+MAX_FILE_SIZE=524288000      # 500MB in bytes
 
-# Standard Admin-User
+# Default Admin User
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin123      # WICHTIG: Ändern Sie dies!
+ADMIN_PASSWORD=admin123      # CRITICAL: Change this in production!
 ADMIN_EMAIL=admin@mycloud.local
 ```
 
-### Speicher-Quotas
+### Storage Quotas
 
-Standard-Quota pro Benutzer: **10 GB**
+Default quota per user: **10 GB**
 
-Sie können dies beim Erstellen eines Benutzers im Admin-Panel anpassen.
+This can be customized when creating users in the Admin Panel.
 
-## 🌐 Deployment auf Rootserver
+## Production Deployment
 
-### Mit Docker (Empfohlen)
+### Docker Deployment (Recommended)
 
-1. **Dateien auf Server übertragen**
+1. **Transfer files to server**
 ```bash
 scp -r mycloud user@your-server.com:/home/user/
 ```
 
-2. **Auf Server verbinden**
+2. **Connect to server**
 ```bash
 ssh user@your-server.com
 cd mycloud
 ```
 
-3. **Umgebung konfigurieren (KRITISCH - NICHT ÜBERSPRINGEN!)**
+3. **Configure environment (CRITICAL - DO NOT SKIP!)**
 ```bash
 nano .env
 ```
 
-⚠️ **PRODUKTIONS-SICHERHEIT:** Sie MÜSSEN diese Werte ändern:
-- `JWT_SECRET` - Verwenden Sie eine starke Zufallszeichenfolge (mindestens 32 Zeichen)
-- `ADMIN_PASSWORD` - Verwenden Sie ein sicheres Passwort
+⚠️ **PRODUCTION SECURITY:** You MUST change these values:
+- `JWT_SECRET` - Use a strong random string (minimum 32 characters)
+- `ADMIN_PASSWORD` - Use a secure password
 
-Sicheren JWT_SECRET generieren:
+Generate a secure JWT_SECRET:
 ```bash
 openssl rand -base64 32
 ```
 
-4. **Docker Container starten**
+4. **Start Docker containers**
 ```bash
 docker-compose up -d
 ```
 
-5. **Reverse Proxy konfigurieren (Optional)**
+5. **Configure Reverse Proxy (Optional)**
 
-Sie können MyCloud entweder im Root einer Domain oder in einem Unterverzeichnis bereitstellen.
+You can deploy MyCloud either at the root of a domain or in a subdirectory.
 
-#### Option A: Apache (Unterverzeichnis-Deployment - Getestet & Verifiziert)
+#### Option A: Apache (Subdirectory Deployment - Tested & Verified)
 
-Diese Konfiguration stellt MyCloud unter `https://ihre-domain.de/cloud` bereit
+This configuration serves MyCloud at `https://yourdomain.com/cloud`
 
-**Erforderliche Apache-Module aktivieren:**
+**Enable required Apache modules:**
 ```bash
 sudo a2enmod proxy proxy_http rewrite headers ssl
 sudo systemctl restart apache2
 ```
 
-**Zu Ihrer Apache VirtualHost-Konfiguration hinzufügen:**
+**Add to your Apache VirtualHost configuration:**
 ```apache
 <VirtualHost *:443>
-    ServerName ihre-domain.de
+    ServerName yourdomain.com
 
-    # SSL Konfiguration (bei Verwendung von Let's Encrypt)
+    # SSL Configuration (if using Let's Encrypt)
     SSLEngine on
-    SSLCertificateFile /etc/letsencrypt/live/ihre-domain.de/fullchain.pem
-    SSLCertificateKeyFile /etc/letsencrypt/live/ihre-domain.de/privkey.pem
+    SSLCertificateFile /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/yourdomain.com/privkey.pem
     Include /etc/letsencrypt/options-ssl-apache.conf
 
-    # MyCloud Proxy Konfiguration
+    # MyCloud Proxy Configuration
     ProxyPreserveHost On
     ProxyRequests Off
 
-    # Große Datei-Uploads erlauben (500MB)
+    # Allow large file uploads (500MB)
     LimitRequestBody 524288000
 
-    # Rewrite Engine für MyCloud
+    # Rewrite Engine for MyCloud
     RewriteEngine On
 
-    # Alle /cloud/* Anfragen zum Backend weiterleiten
+    # Forward all /cloud/* requests to backend
     RewriteCond %{REQUEST_URI} ^/cloud
     RewriteRule ^/cloud/?(.*) http://localhost:6868/$1 [P,L]
 
@@ -267,22 +276,22 @@ sudo systemctl restart apache2
 </VirtualHost>
 ```
 
-**Apache neu starten:**
+**Restart Apache:**
 ```bash
 sudo systemctl restart apache2
 ```
 
-Zugriff auf MyCloud unter: `https://ihre-domain.de/cloud`
+Access your MyCloud at: `https://yourdomain.com/cloud`
 
-#### Option B: Nginx (Root-Domain-Deployment)
+#### Option B: Nginx (Root Domain Deployment)
 
-Diese Konfiguration stellt MyCloud unter `https://cloud.ihre-domain.de` bereit
+This configuration serves MyCloud at `https://cloud.yourdomain.com`
 
-**Erstellen Sie `/etc/nginx/sites-available/mycloud`:**
+**Create `/etc/nginx/sites-available/mycloud`:**
 ```nginx
 server {
     listen 80;
-    server_name cloud.ihre-domain.de;
+    server_name cloud.yourdomain.com;
 
     client_max_body_size 500M;
 
@@ -300,23 +309,23 @@ server {
 }
 ```
 
-**Site aktivieren und SSL mit Let's Encrypt einrichten:**
+**Enable site and configure SSL with Let's Encrypt:**
 ```bash
 sudo ln -s /etc/nginx/sites-available/mycloud /etc/nginx/sites-enabled/
-sudo certbot --nginx -d cloud.ihre-domain.de
+sudo certbot --nginx -d cloud.yourdomain.com
 sudo systemctl reload nginx
 ```
 
-Zugriff auf MyCloud unter: `https://cloud.ihre-domain.de`
+Access your MyCloud at: `https://cloud.yourdomain.com`
 
-#### Option C: Nginx (Unterverzeichnis-Deployment)
+#### Option C: Nginx (Subdirectory Deployment)
 
-Diese Konfiguration stellt MyCloud unter `https://ihre-domain.de/cloud` bereit
+This configuration serves MyCloud at `https://yourdomain.com/cloud`
 
 ```nginx
 server {
     listen 80;
-    server_name ihre-domain.de;
+    server_name yourdomain.com;
 
     client_max_body_size 500M;
 
@@ -335,89 +344,132 @@ server {
 }
 ```
 
-### Container-Management
+### Container Management
 
 ```bash
-# Logs anzeigen
+# View logs
 docker-compose logs -f
 
-# Container neustarten
+# Restart containers
 docker-compose restart
 
-# Container stoppen
+# Stop containers
 docker-compose down
 
-# Updates durchführen
+# Update containers
 docker-compose pull
 docker-compose up -d --build
 ```
 
-## 🗂️ Projektstruktur
+## Project Structure
 
 ```
 mycloud/
 ├── server/               # Backend (Node.js/Express)
-│   ├── index.js         # Haupt-Server
-│   ├── database/        # Datenbank-Setup
-│   ├── middleware/      # Auth-Middleware
-│   └── routes/          # API-Routen
+│   ├── index.js         # Main server file
+│   ├── database/        # Database initialization
+│   ├── middleware/      # Authentication middleware
+│   └── routes/          # API routes
 ├── client/              # Frontend (React)
 │   ├── src/
-│   │   ├── components/  # React-Komponenten
-│   │   ├── pages/       # Seiten
-│   │   ├── store/       # Zustand-Management
-│   │   └── api/         # API-Client
+│   │   ├── components/  # React components
+│   │   ├── pages/       # Application pages
+│   │   ├── store/       # State management
+│   │   └── api/         # API client
 │   └── package.json
-├── data/                # Laufzeit-Daten (wird erstellt)
-│   ├── database.sqlite  # SQLite Datenbank
-│   └── uploads/         # Hochgeladene Dateien
-├── docker-compose.yml   # Docker-Konfiguration
+├── data/                # Runtime data (created on first run)
+│   ├── database.sqlite  # SQLite database
+│   └── uploads/         # User uploaded files
+├── docker-compose.yml   # Docker configuration
 ├── Dockerfile
 └── README.md
 ```
 
-## 🔒 Sicherheit
+## Security Features
 
-- ✅ JWT-basierte Authentifizierung
-- ✅ Passwort-Hashing mit bcrypt
-- ✅ CORS-Protection
-- ✅ Helmet.js Security Headers
-- ✅ Rate Limiting
-- ✅ Input Validation
-- ⚠️ **WICHTIG:** Ändern Sie `JWT_SECRET` und `ADMIN_PASSWORD` in Produktion!
+- JWT-based authentication
+- Password hashing with bcrypt
+- CORS protection
+- Helmet.js security headers
+- Rate limiting
+- Input validation
+- **IMPORTANT:** Change `JWT_SECRET` and `ADMIN_PASSWORD` before production deployment!
 
-## 📊 Datenbank
+## Database
 
-Die Anwendung verwendet SQLite für einfaches Deployment. Die Datenbank wird automatisch beim ersten Start initialisiert.
+The application uses SQLite for simplified deployment. The database is automatically initialized on first startup.
 
-**Tabellen:**
-- `users` - Benutzerdaten
-- `files` - Datei-Metadaten
-- `folders` - Ordner-Struktur
-- `shared_files` - Datei-Sharing-Informationen
+**Tables:**
+- `users` - User account information
+- `files` - File metadata
+- `folders` - Folder structure
+- `shared_files` - File sharing information
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
-### Problem: "Cannot connect to server"
-- Prüfen Sie ob der Server läuft: `docker-compose ps`
-- Prüfen Sie die Logs: `docker-compose logs`
-- Stellen Sie sicher Port 6868 ist frei
+### "Cannot connect to server"
+- Verify server is running: `docker-compose ps`
+- Check logs: `docker-compose logs`
+- Ensure port 6868 is available
 
-### Problem: "Upload failed - Storage quota exceeded"
-- Admin kann im Admin-Panel das Quota erhöhen
-- Oder alte Dateien löschen
+### "Upload failed - Storage quota exceeded"
+- Administrator can increase quota in Admin Panel
+- User can delete old files to free up space
 
-### Problem: "Database locked"
-- SQLite unterstützt nur einen Schreibzugriff gleichzeitig
-- Bei hoher Last zu PostgreSQL/MySQL migrieren
+### "Database locked"
+- SQLite supports only one concurrent write operation
+- Consider migrating to PostgreSQL/MySQL for high-traffic deployments
 
-## 🤝 Support
+## Technology Stack
 
-Bei Fragen oder Problemen:
-1. Prüfen Sie die Logs: `docker-compose logs -f`
-2. Stellen Sie sicher alle Umgebungsvariablen sind gesetzt
-3. Prüfen Sie dass Port 6868 nicht bereits verwendet wird
+**Backend:**
+- Node.js
+- Express.js
+- SQLite
+- JWT for authentication
+- bcrypt for password hashing
+
+**Frontend:**
+- React
+- Tailwind CSS
+- Zustand for state management
+- Vite for build tooling
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - Create new user (admin only)
+
+### Files
+- `GET /api/files` - List files
+- `POST /api/files/upload` - Upload file
+- `GET /api/files/download/:id` - Download file
+- `DELETE /api/files/:id` - Delete file
+- `POST /api/files/share/:id` - Create share link
+
+### Folders
+- `GET /api/folders` - List folders
+- `POST /api/folders` - Create folder
+- `DELETE /api/folders/:id` - Delete folder
+
+### Users (Admin only)
+- `GET /api/users` - List all users
+- `POST /api/users` - Create user
+- `DELETE /api/users/:id` - Delete user
+
+## Support
+
+For issues or questions:
+1. Check logs: `docker-compose logs -f`
+2. Verify all environment variables are properly set
+3. Ensure port 6868 is not already in use
+4. Review the troubleshooting section above
+
+## Contributing
+
+Contributions are welcome. Please ensure all tests pass before submitting pull requests.
 
 ---
 
-**Viel Erfolg mit Ihrer MyCloud! ☁️**
+**MyCloud - Your data, your control**

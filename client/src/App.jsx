@@ -5,7 +5,6 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import AdminPanel from './pages/AdminPanel'
 
-// Base path wird beim Build gesetzt (z.B. /cloud)
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') 
   ? import.meta.env.BASE_URL.slice(0, -1) 
   : import.meta.env.BASE_URL

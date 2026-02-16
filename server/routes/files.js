@@ -10,7 +10,6 @@ const router = express.Router();
 const UPLOAD_PATH = process.env.UPLOAD_PATH || './data/uploads';
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE) || 524288000; // 500MB
 
-// Configure multer
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const userDir = path.join(UPLOAD_PATH, req.user.id.toString());
@@ -27,12 +26,10 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter: (req, file, cb) => {
-    // Allow all file types
     cb(null, true);
   }
 });
 
-// Get files
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { folder_id } = req.query;
@@ -57,7 +54,6 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// Upload file
 router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
@@ -66,19 +62,16 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
 
     const { folder_id } = req.body;
 
-    // Check storage quota
     const user = await getQuery(
       'SELECT storage_quota, storage_used FROM users WHERE id = ?',
       [req.user.id]
     );
 
     if (user.storage_used + req.file.size > user.storage_quota) {
-      // Delete uploaded file
       await fs.unlink(req.file.path);
       return res.status(400).json({ error: 'Storage quota exceeded' });
     }
 
-    // Verify folder belongs to user if specified
     if (folder_id) {
       const folder = await getQuery(
         'SELECT id FROM folders WHERE id = ? AND user_id = ?',
@@ -105,7 +98,6 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
       ]
     );
 
-    // Update user storage
     await runQuery(
       'UPDATE users SET storage_used = storage_used + ? WHERE id = ?',
       [req.file.size, req.user.id]
@@ -128,7 +120,6 @@ router.post('/upload', authenticateToken, upload.single('file'), async (req, res
   }
 });
 
-// View file (streaming for images/videos)
 router.get('/:id/view', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -145,12 +136,10 @@ router.get('/:id/view', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Set appropriate headers for media streaming
     res.setHeader('Content-Type', file.mime_type || 'application/octet-stream');
     res.setHeader('Content-Length', file.size);
     res.setHeader('Accept-Ranges', 'bytes');
-    
-    // Send file
+
     res.sendFile(file.path);
   } catch (error) {
     console.error('View error:', error);
@@ -158,7 +147,6 @@ router.get('/:id/view', authenticateToken, async (req, res) => {
   }
 });
 
-// Download file
 router.get('/:id/download', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -181,8 +169,7 @@ router.get('/:id/download', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Delete file
+e
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -195,14 +182,10 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     if (!file) {
       return res.status(404).json({ error: 'File not found' });
     }
-
-    // Delete physical file
     await fs.unlink(file.path).catch(() => {});
 
-    // Delete from database
     await runQuery('DELETE FROM files WHERE id = ?', [id]);
 
-    // Update user storage
     await runQuery(
       'UPDATE users SET storage_used = storage_used - ? WHERE id = ?',
       [file.size, req.user.id]
@@ -215,7 +198,6 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Share file
 router.post('/:id/share', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -231,7 +213,6 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
     }
 
     if (shareWithUserId) {
-      // Share with specific user
       const targetUser = await getQuery('SELECT id FROM users WHERE id = ?', [shareWithUserId]);
       
       if (!targetUser) {
@@ -245,7 +226,6 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
 
       res.json({ message: 'File shared successfully' });
     } else {
-      // Generate public share token
       const shareToken = crypto.randomBytes(32).toString('hex');
       
       await runQuery(
@@ -261,7 +241,6 @@ router.post('/:id/share', authenticateToken, async (req, res) => {
   }
 });
 
-// Get public file
 router.get('/public/:token', async (req, res) => {
   try {
     const { token } = req.params;
@@ -282,7 +261,6 @@ router.get('/public/:token', async (req, res) => {
   }
 });
 
-// Get shared files
 router.get('/shared/with-me', authenticateToken, async (req, res) => {
   try {
     const files = await allQuery(
@@ -302,7 +280,6 @@ router.get('/shared/with-me', authenticateToken, async (req, res) => {
   }
 });
 
-// Move file to folder
 router.put('/:id/move', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
