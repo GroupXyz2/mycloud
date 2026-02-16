@@ -583,6 +583,89 @@ The application uses SQLite for simplified deployment. The database is automatic
 - `POST /api/users` - Create user
 - `DELETE /api/users/:id` - Delete user
 
+## Using External Storage
+
+By default, MyCloud stores data in a Docker volume. To use an external disk or different location:
+
+### Method 1: Bind Mount (Recommended)
+
+Edit your `docker-compose.yml` or `docker-compose.local.yml`:
+
+```yaml
+services:
+  mycloud:
+    # ... other settings ...
+    volumes:
+      - /mnt/external-disk/mycloud-data:/app/data
+```
+
+**Linux/Raspberry Pi example:**
+```yaml
+volumes:
+  - /mnt/usb-drive/mycloud:/app/data
+```
+
+**Windows example:**
+```yaml
+volumes:
+  - D:/MyCloud/data:/app/data
+```
+
+### Method 2: Named Volume with Custom Location
+
+```yaml
+volumes:
+  mycloud-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /mnt/external-disk/mycloud-data
+```
+
+### Migration Steps
+
+If you already have existing data and want to move it:
+⚠️ Careful, this example uses the compose file  for local network usage, use docker-compose.yml otherwise!
+
+```bash
+# 1. Stop the container
+sudo docker compose -f docker-compose.local.yml down
+
+# 2. Create directory on external disk
+sudo mkdir -p /mnt/external-disk/mycloud-data
+
+# 3. Copy existing data from Docker volume
+sudo docker run --rm \
+  -v mycloud-data:/from \
+  -v /mnt/external-disk/mycloud-data:/to \
+  alpine cp -a /from/. /to/
+
+# 4. Set proper permissions
+sudo chown -R 1000:1000 /mnt/external-disk/mycloud-data
+
+# 5. Update docker-compose file with new path
+# Change volumes section to use bind mount:
+#   volumes:
+#     - /mnt/external-disk/mycloud-data:/app/data
+# And REMOVE the volumes: definition at the bottom (mycloud-data:)
+
+# 6. Remove old Docker volume completely
+# ⚠️This will delete your data if not copied before!⚠️
+sudo docker volume rm mycloud_mycloud-data
+# If it fails, use: sudo docker compose -f docker-compose.local.yml down -v
+
+# 7. Verify volume is removed
+sudo docker volume ls | grep mycloud
+
+# 8. Start container with new location
+sudo docker compose -f docker-compose.local.yml up -d
+
+# 9. Verify it's using the correct location
+docker inspect mycloud | grep -A 5 Mounts
+ls -la /mnt/external-disk/mycloud-data/
+```
+
 ## Support
 
 For issues or questions:
