@@ -228,12 +228,12 @@ Open your browser and navigate to: `https://yourdomain.com/cloud`
 npm install
 ```
 
-2. **Configure environment (CRITICAL STEP!)**
+2. **Configure environment**
 ```bash
 cp .env.example .env
 ```
 
-⚠️ **SECURITY WARNING:** Edit `.env` and change at minimum:
+⚠️ **IMPORTANT:** Edit `.env` and change at minimum:
 - `JWT_SECRET` - Strong secret key (minimum 32 characters)
 - `ADMIN_PASSWORD` - Secure password (NOT "admin123")
 
