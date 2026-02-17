@@ -104,6 +104,13 @@
     "downloadError": "Fehler beim Herunterladen",
     "videoNotSupported": "Ihr Browser unterstützt keine Videowiedergabe."
   },
+  "settings": {
+    "serverConfiguration": "Server-Konfiguration",
+    "serverUrl": "Server-URL",
+    "serverUrlHint": "Geben Sie die Adresse Ihres MyCloud-Servers ein (z.B. http://192.168.1.100:6868)",
+    "save": "Speichern & Neu laden",
+    "cancel": "Abbrechen"
+  },
   "admin": {
     "title": "Admin Panel",
     "subtitle": "Benutzerverwaltung",

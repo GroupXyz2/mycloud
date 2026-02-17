@@ -1,11 +1,24 @@
 import axios from 'axios'
+import { Capacitor } from '@capacitor/core'
 
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') 
   ? import.meta.env.BASE_URL.slice(0, -1) 
   : import.meta.env.BASE_URL
 
+const getBaseURL = () => {
+  if (Capacitor.isNativePlatform()) {
+    const savedServerUrl = localStorage.getItem('serverUrl')
+    if (savedServerUrl) {
+      return `${savedServerUrl}${BASE_PATH}/api`
+    }
+    console.warn('⚙️  Mobile app: Server URL not configured. Tap settings icon on login screen.')
+    return 'http://not-configured/api'
+  }
+  return `${BASE_PATH}/api`
+}
+
 const api = axios.create({
-  baseURL: `${BASE_PATH}/api`,
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -50,7 +63,13 @@ export const fileAPI = {
     headers: { 'Content-Type': 'multipart/form-data' },
     onUploadProgress: onProgress,
   }),
-  download: (id) => `${BASE_PATH}/api/files/${id}/download`,
+  download: (id) => {
+    if (Capacitor.isNativePlatform()) {
+      const serverUrl = localStorage.getItem('serverUrl') || 'http://localhost:6868'
+      return `${serverUrl}${BASE_PATH}/api/files/${id}/download`
+    }
+    return `${BASE_PATH}/api/files/${id}/download`
+  },
   delete: (id) => api.delete(`/files/${id}`),
   share: (id, data) => api.post(`/files/${id}/share`, data),
   getShared: () => api.get('/files/shared/with-me'),

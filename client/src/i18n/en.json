@@ -104,6 +104,13 @@
     "downloadError": "Failed to download",
     "videoNotSupported": "Your browser does not support video playback."
   },
+  "settings": {
+    "serverConfiguration": "Server Configuration",
+    "serverUrl": "Server URL",
+    "serverUrlHint": "Enter your MyCloud server address (e.g., http://192.168.1.100:6868)",
+    "save": "Save & Reload",
+    "cancel": "Cancel"
+  },
   "admin": {
     "title": "Admin Panel",
     "subtitle": "User Management",

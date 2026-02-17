@@ -13,6 +13,8 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - **File Sharing** - Share files securely via public links
 - **Storage Quotas** - Configurable storage limits per user
 - **Modern Interface** - Built with React and Tailwind CSS for a responsive, intuitive experience
+- **Mobile Apps** - Native Android and iOS apps via Capacitor (see [MOBILE_SETUP.md](MOBILE_SETUP.md))
+- **PWA Support** - Progressive Web App for installable web experience
 - **Docker Support** - Containerized deployment for easy setup and maintenance
 - **JWT Authentication** - Secure token-based authentication system
 
@@ -21,6 +23,7 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - [Quick Start for Local Network Use](#quick-start-for-local-network-use)
 - [Quick Start for Online Use with Docker and HTTPS](#quick-start-for-online-use-with-docker-and-https)
 - [Manual Installation (without Docker)](#manual-installation-without-docker)
+- [Mobile App Setup (Android/iOS)](#mobile-app-setup)
 - [Usage Guide](#usage-guide)
 - [Configuration](#configuration)
 - [Production Deployment](#production-deployment)
@@ -294,6 +297,66 @@ NODE_ENV=production npm start
 ```
 
 Access the application at `http://localhost:6868` (or your server's IP/hostname).
+
+## Mobile App Setup
+
+MyCloud can be built as native Android and iOS mobile apps using Capacitor, which wraps the web application in a native container with access to device features.
+
+### Features
+- ✅ Native iOS and Android apps
+- ✅ Installable from app stores or as APK/IPA
+- ✅ Camera and file picker integration
+- ✅ Splash screen and app icons
+- ✅ Offline detection
+- ✅ Configurable server URL
+- ✅ Full feature parity with web version
+
+### Quick Start
+
+1. **Install dependencies:**
+   ```bash
+   cd client
+   npm install
+   ```
+
+2. **Build the web app:**
+   ```bash
+   npm run build
+   ```
+
+3. **Initialize Capacitor:**
+   ```bash
+   cd ..
+   npx cap init
+   ```
+
+4. **Add platforms:**
+   ```bash
+   # For Android
+   npx cap add android
+   npm run sync
+   npm run android  # Opens Android Studio
+
+   # For iOS (macOS only)
+   npx cap add ios
+   npm run sync
+   npm run ios  # Opens Xcode
+   ```
+
+### Configuration
+
+**Server configuration happens entirely within the app:**
+
+- On first launch, mobile apps automatically prompt for your server URL
+- Tap the settings icon (⚙️) on the login screen to change server URL anytime
+- Configuration is stored locally - no code changes or rebuilding required
+
+### Detailed Instructions
+
+For complete setup instructions, requirements, troubleshooting, and build configurations, see:
+
+📱 **[MOBILE_SETUP.md](MOBILE_SETUP.md)** - Comprehensive mobile app setup guide
+🎨 **[ICON_GUIDE.md](ICON_GUIDE.md)** - App icon creation and customization guide
 
 ## Usage Guide
 

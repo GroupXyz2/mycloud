@@ -1,16 +1,26 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '../store/authStore'
-import { Cloud, Lock, User } from 'lucide-react'
+import { Cloud, Lock, User, Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useThemeStore } from '../store/themeStore'
+import { Capacitor } from '@capacitor/core'
+import ServerSettings from '../components/ServerSettings'
 
 export default function Login() {
   const [credentials, setCredentials] = useState({ username: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const login = useAuthStore((state) => state.login)
   const { t } = useTranslation()
   const { theme } = useThemeStore()
+  const isMobile = Capacitor.isNativePlatform()
+
+  useEffect(() => {
+    if (isMobile && !localStorage.getItem('serverUrl')) {
+      setShowSettings(true)
+    }
+  }, [isMobile])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -37,7 +47,18 @@ export default function Login() {
           <p className={theme.textSecondary}>{t('login.subtitle')}</p>
         </div>
 
-        <div className={`${theme.card} rounded-2xl shadow-2xl p-8 border ${theme.border}`}>
+        <div className={`${theme.card} rounded-2xl shadow-2xl p-8 border ${theme.border} relative`}>
+          {isMobile && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="absolute top-4 right-4 p-2 rounded-lg transition-colors"
+              style={{ color: theme.text }}
+              title="Server Settings"
+            >
+              <Settings size={20} />
+            </button>
+          )}
+          
           <h2 className={`text-2xl font-bold ${theme.text} mb-6`}>{t('login.title')}</h2>
 
           {error && (
@@ -100,6 +121,8 @@ export default function Login() {
           <p>{t('login.defaultAccess')}</p>
         </div>
       </div>
+
+      {showSettings && <ServerSettings onClose={() => setShowSettings(false)} />}
     </div>
   )
 }
