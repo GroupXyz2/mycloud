@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useThemeStore } from '../store/themeStore'
 
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') 
   ? import.meta.env.BASE_URL.slice(0, -1) 
@@ -8,6 +9,7 @@ const BASE_PATH = import.meta.env.BASE_URL.endsWith('/')
 export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext, hasPrevious }) {
   const [mediaUrl, setMediaUrl] = useState(null)
   const [loading, setLoading] = useState(true)
+  const { theme } = useThemeStore()
 
   useEffect(() => {
     if (!file) return

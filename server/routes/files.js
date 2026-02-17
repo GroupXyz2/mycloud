@@ -2,7 +2,10 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const crypto = require('crypto');
+const archiver = require('archiver');
+const AdmZip = require('adm-zip');
 const { authenticateToken } = require('../middleware/auth');
 const { runQuery, getQuery, allQuery } = require('../database/init');
 
@@ -34,7 +37,7 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const { folder_id } = req.query;
     
-    let query = 'SELECT * FROM files WHERE user_id = ?';
+    let query = 'SELECT * FROM files WHERE user_id = ? AND (is_trashed = 0 OR is_trashed IS NULL)';
     const params = [req.user.id];
     
     if (folder_id) {
@@ -313,6 +316,463 @@ router.put('/:id/move', authenticateToken, async (req, res) => {
     res.json({ message: 'File moved successfully' });
   } catch (error) {
     console.error('Move file error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/:id/copy', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { folder_id } = req.body;
+
+    const file = await getQuery(
+      'SELECT * FROM files WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const user = await getQuery(
+      'SELECT storage_quota, storage_used FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (user.storage_used + file.size > user.storage_quota) {
+      return res.status(400).json({ error: 'Storage quota exceeded' });
+    }
+
+    if (folder_id) {
+      const folder = await getQuery(
+        'SELECT id FROM folders WHERE id = ? AND user_id = ?',
+        [folder_id, req.user.id]
+      );
+      
+      if (!folder) {
+        return res.status(404).json({ error: 'Folder not found' });
+      }
+    }
+
+    const ext = path.extname(file.name);
+    const baseName = path.basename(file.name, ext);
+    const newFileName = `${baseName}-copy-${Date.now()}${ext}`;
+    const newPath = path.join(path.dirname(file.path), newFileName);
+
+    await fs.copyFile(file.path, newPath);
+
+    const result = await runQuery(
+      `INSERT INTO files (name, original_name, path, size, mime_type, folder_id, user_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        newFileName,
+        `Copy of ${file.original_name}`,
+        newPath,
+        file.size,
+        file.mime_type,
+        folder_id || file.folder_id,
+        req.user.id
+      ]
+    );
+
+    await runQuery(
+      'UPDATE users SET storage_used = storage_used + ? WHERE id = ?',
+      [file.size, req.user.id]
+    );
+
+    res.status(201).json({
+      id: result.lastID,
+      message: 'File copied successfully'
+    });
+  } catch (error) {
+    console.error('Copy file error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/:id/rename', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'File name required' });
+    }
+
+    const file = await getQuery(
+      'SELECT * FROM files WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    await runQuery(
+      'UPDATE files SET original_name = ? WHERE id = ?',
+      [name, id]
+    );
+
+    res.json({ message: 'File renamed successfully' });
+  } catch (error) {
+    console.error('Rename file error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/:id/unzip', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { folder_id } = req.body;
+
+    const file = await getQuery(
+      'SELECT * FROM files WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    if (!file.mime_type?.includes('zip') && !file.original_name.endsWith('.zip')) {
+      return res.status(400).json({ error: 'File is not a zip archive' });
+    }
+
+    const zip = new AdmZip(file.path);
+    const zipEntries = zip.getEntries();
+    
+    let totalSize = 0;
+    zipEntries.forEach(entry => {
+      if (!entry.isDirectory) {
+        totalSize += entry.header.size;
+      }
+    });
+
+    const user = await getQuery(
+      'SELECT storage_quota, storage_used FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    if (user.storage_used + totalSize > user.storage_quota) {
+      return res.status(400).json({ error: 'Storage quota exceeded' });
+    }
+
+    const extractPath = path.join(UPLOAD_PATH, req.user.id.toString());
+    const filesAdded = [];
+
+    for (const entry of zipEntries) {
+      if (!entry.isDirectory) {
+        const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${path.extname(entry.entryName)}`;
+        const filePath = path.join(extractPath, uniqueName);
+        
+        zip.extractEntryTo(entry, extractPath, false, true, false, uniqueName);
+        
+        const stats = await fs.stat(filePath);
+        const mimeType = require('mime-types').lookup(entry.entryName) || 'application/octet-stream';
+
+        const result = await runQuery(
+          `INSERT INTO files (name, original_name, path, size, mime_type, folder_id, user_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            uniqueName,
+            path.basename(entry.entryName),
+            filePath,
+            stats.size,
+            mimeType,
+            folder_id || file.folder_id,
+            req.user.id
+          ]
+        );
+
+        filesAdded.push({
+          id: result.lastID,
+          name: path.basename(entry.entryName),
+          size: stats.size
+        });
+
+        await runQuery(
+          'UPDATE users SET storage_used = storage_used + ? WHERE id = ?',
+          [stats.size, req.user.id]
+        );
+      }
+    }
+
+    res.json({
+      message: 'Files extracted successfully',
+      files: filesAdded
+    });
+  } catch (error) {
+    console.error('Unzip error:', error);
+    res.status(500).json({ error: 'Failed to extract archive' });
+  }
+});
+
+router.post('/bulk/delete', authenticateToken, async (req, res) => {
+  try {
+    const { file_ids } = req.body;
+
+    if (!Array.isArray(file_ids) || file_ids.length === 0) {
+      return res.status(400).json({ error: 'Invalid file IDs' });
+    }
+
+    const placeholders = file_ids.map(() => '?').join(',');
+    const files = await allQuery(
+      `SELECT * FROM files WHERE id IN (${placeholders}) AND user_id = ?`,
+      [...file_ids, req.user.id]
+    );
+
+    let totalSize = 0;
+    for (const file of files) {
+      await fs.unlink(file.path).catch(() => {});
+      totalSize += file.size;
+    }
+
+    await runQuery(
+      `DELETE FROM files WHERE id IN (${placeholders}) AND user_id = ?`,
+      [...file_ids, req.user.id]
+    );
+
+    await runQuery(
+      'UPDATE users SET storage_used = storage_used - ? WHERE id = ?',
+      [totalSize, req.user.id]
+    );
+
+    res.json({ message: `${files.length} files deleted successfully` });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/bulk/move', authenticateToken, async (req, res) => {
+  try {
+    const { file_ids, folder_id } = req.body;
+
+    if (!Array.isArray(file_ids) || file_ids.length === 0) {
+      return res.status(400).json({ error: 'Invalid file IDs' });
+    }
+
+    if (folder_id) {
+      const folder = await getQuery(
+        'SELECT id FROM folders WHERE id = ? AND user_id = ?',
+        [folder_id, req.user.id]
+      );
+      
+      if (!folder) {
+        return res.status(404).json({ error: 'Folder not found' });
+      }
+    }
+
+    const placeholders = file_ids.map(() => '?').join(',');
+    await runQuery(
+      `UPDATE files SET folder_id = ? WHERE id IN (${placeholders}) AND user_id = ?`,
+      [folder_id || null, ...file_ids, req.user.id]
+    );
+
+    res.json({ message: `${file_ids.length} files moved successfully` });
+  } catch (error) {
+    console.error('Bulk move error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/bulk/download', authenticateToken, async (req, res) => {
+  try {
+    const { file_ids } = req.body;
+
+    if (!Array.isArray(file_ids) || file_ids.length === 0) {
+      return res.status(400).json({ error: 'Invalid file IDs' });
+    }
+
+    const placeholders = file_ids.map(() => '?').join(',');
+    const files = await allQuery(
+      `SELECT * FROM files WHERE id IN (${placeholders}) AND user_id = ?`,
+      [...file_ids, req.user.id]
+    );
+
+    if (files.length === 0) {
+      return res.status(404).json({ error: 'No files found' });
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="files-${Date.now()}.zip"`);
+
+    const archive = archiver('zip', {
+      zlib: { level: 9 }
+    });
+
+    archive.on('error', (err) => {
+      throw err;
+    });
+
+    archive.pipe(res);
+
+    for (const file of files) {
+      if (fsSync.existsSync(file.path)) {
+        archive.file(file.path, { name: file.original_name });
+      }
+    }
+
+    await archive.finalize();
+  } catch (error) {
+    console.error('Bulk download error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/search', authenticateToken, async (req, res) => {
+  try {
+    const { q } = req.query;
+
+    if (!q || q.trim().length === 0) {
+      return res.json([]);
+    }
+
+    const files = await allQuery(
+      `SELECT * FROM files 
+       WHERE user_id = ? AND original_name LIKE ? 
+       ORDER BY created_at DESC 
+       LIMIT 50`,
+      [req.user.id, `%${q}%`]
+    );
+
+    res.json(files);
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/:id/favorite', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_favorite } = req.body;
+
+    const file = await getQuery(
+      'SELECT * FROM files WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    await runQuery(
+      'UPDATE files SET is_favorite = ? WHERE id = ?',
+      [is_favorite ? 1 : 0, id]
+    );
+
+    res.json({ message: 'Favorite status updated' });
+  } catch (error) {
+    console.error('Favorite error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/favorites', authenticateToken, async (req, res) => {
+  try {
+    const files = await allQuery(
+      'SELECT * FROM files WHERE user_id = ? AND is_favorite = 1 ORDER BY created_at DESC',
+      [req.user.id]
+    );
+
+    res.json(files);
+  } catch (error) {
+    console.error('Get favorites error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/:id/trash', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const file = await getQuery(
+      'SELECT * FROM files WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    await runQuery(
+      'UPDATE files SET is_trashed = 1, trashed_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [id]
+    );
+
+    res.json({ message: 'File moved to trash' });
+  } catch (error) {
+    console.error('Trash error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/:id/restore', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const file = await getQuery(
+      'SELECT * FROM files WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    await runQuery(
+      'UPDATE files SET is_trashed = 0, trashed_at = NULL WHERE id = ?',
+      [id]
+    );
+
+    res.json({ message: 'File restored from trash' });
+  } catch (error) {
+    console.error('Restore error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/trash', authenticateToken, async (req, res) => {
+  try {
+    const files = await allQuery(
+      'SELECT * FROM files WHERE user_id = ? AND is_trashed = 1 ORDER BY trashed_at DESC',
+      [req.user.id]
+    );
+
+    res.json(files);
+  } catch (error) {
+    console.error('Get trash error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.delete('/trash/empty', authenticateToken, async (req, res) => {
+  try {
+    const files = await allQuery(
+      'SELECT * FROM files WHERE user_id = ? AND is_trashed = 1',
+      [req.user.id]
+    );
+
+    let totalSize = 0;
+    for (const file of files) {
+      await fs.unlink(file.path).catch(() => {});
+      totalSize += file.size;
+    }
+
+    await runQuery(
+      'DELETE FROM files WHERE user_id = ? AND is_trashed = 1',
+      [req.user.id]
+    );
+
+    await runQuery(
+      'UPDATE users SET storage_used = storage_used - ? WHERE id = ?',
+      [totalSize, req.user.id]
+    );
+
+    res.json({ message: 'Trash emptied successfully' });
+  } catch (error) {
+    console.error('Empty trash error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

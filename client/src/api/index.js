@@ -55,6 +55,19 @@ export const fileAPI = {
   share: (id, data) => api.post(`/files/${id}/share`, data),
   getShared: () => api.get('/files/shared/with-me'),
   move: (id, folderId) => api.put(`/files/${id}/move`, { folder_id: folderId }),
+  copy: (id, folderId) => api.post(`/files/${id}/copy`, { folder_id: folderId }),
+  rename: (id, name) => api.put(`/files/${id}/rename`, { name }),
+  unzip: (id, folderId) => api.post(`/files/${id}/unzip`, { folder_id: folderId }),
+  search: (query) => api.get('/files/search', { params: { q: query } }),
+  toggleFavorite: (id, isFavorite) => api.put(`/files/${id}/favorite`, { is_favorite: isFavorite }),
+  getFavorites: () => api.get('/files/favorites'),
+  moveToTrash: (id) => api.put(`/files/${id}/trash`),
+  restoreFromTrash: (id) => api.put(`/files/${id}/restore`),
+  getTrash: () => api.get('/files/trash'),
+  emptyTrash: () => api.delete('/files/trash/empty'),
+  bulkDelete: (fileIds) => api.post('/files/bulk/delete', { file_ids: fileIds }),
+  bulkMove: (fileIds, folderId) => api.post('/files/bulk/move', { file_ids: fileIds, folder_id: folderId }),
+  bulkDownload: (fileIds) => api.post('/files/bulk/download', { file_ids: fileIds }, { responseType: 'blob' }),
 }
 
 export const folderAPI = {
@@ -63,6 +76,7 @@ export const folderAPI = {
   create: (data) => api.post('/folders', data),
   update: (id, data) => api.put(`/folders/${id}`, data),
   delete: (id) => api.delete(`/folders/${id}`),
+  move: (id, parentId) => api.put(`/folders/${id}/move`, { parent_id: parentId }),
 }
 
 export default api

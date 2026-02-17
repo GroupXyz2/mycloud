@@ -170,4 +170,55 @@ router.get('/tree', authenticateToken, async (req, res) => {
   }
 });
 
+router.put('/:id/move', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { parent_id } = req.body;
+
+    const folder = await getQuery(
+      'SELECT * FROM folders WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!folder) {
+      return res.status(404).json({ error: 'Folder not found' });
+    }
+
+    if (parent_id) {
+      const parentFolder = await getQuery(
+        'SELECT * FROM folders WHERE id = ? AND user_id = ?',
+        [parent_id, req.user.id]
+      );
+      
+      if (!parentFolder) {
+        return res.status(404).json({ error: 'Parent folder not found' });
+      }
+
+      if (parentFolder.path.startsWith(folder.path + '/')) {
+        return res.status(400).json({ error: 'Cannot move folder to its own subfolder' });
+      }
+    }
+
+    const oldPath = folder.path;
+    const newPath = parent_id 
+      ? (await getQuery('SELECT path FROM folders WHERE id = ?', [parent_id])).path + '/' + folder.name
+      : '/' + folder.name;
+
+    await runQuery(
+      'UPDATE folders SET parent_id = ?, path = ? WHERE id = ?',
+      [parent_id || null, newPath, id]
+    );
+
+    await runQuery(
+      `UPDATE folders SET path = REPLACE(path, ?, ?) WHERE path LIKE ? AND user_id = ?`,
+      [oldPath, newPath, oldPath + '/%', req.user.id]
+    );
+
+    res.json({ message: 'Folder moved successfully' });
+  } catch (error) {
+    console.error('Move folder error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

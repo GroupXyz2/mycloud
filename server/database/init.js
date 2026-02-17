@@ -87,6 +87,9 @@ async function initDatabase() {
         user_id INTEGER NOT NULL,
         is_public INTEGER DEFAULT 0,
         share_token TEXT,
+        is_favorite INTEGER DEFAULT 0,
+        is_trashed INTEGER DEFAULT 0,
+        trashed_at DATETIME,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -110,6 +113,10 @@ async function initDatabase() {
     await runQuery('CREATE INDEX IF NOT EXISTS idx_folders_user ON folders(user_id)');
     await runQuery('CREATE INDEX IF NOT EXISTS idx_files_folder ON files(folder_id)');
     await runQuery('CREATE INDEX IF NOT EXISTS idx_share_token ON files(share_token)');
+
+    await runQuery('ALTER TABLE files ADD COLUMN is_favorite INTEGER DEFAULT 0').catch(() => {});
+    await runQuery('ALTER TABLE files ADD COLUMN is_trashed INTEGER DEFAULT 0').catch(() => {});
+    await runQuery('ALTER TABLE files ADD COLUMN trashed_at DATETIME').catch(() => {});
 
     const adminExists = await getQuery('SELECT id FROM users WHERE is_admin = 1');
     

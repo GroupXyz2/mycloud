@@ -1,7 +1,9 @@
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '../store/themeStore'
 
 export default function StorageBar({ used, total }) {
   const { t } = useTranslation()
+  const { theme } = useThemeStore()
   const percentage = Math.round((used / total) * 100)
 
   const formatBytes = (bytes) => {
@@ -13,14 +15,14 @@ export default function StorageBar({ used, total }) {
   }
 
   return (
-    <div className="bg-white rounded-lg p-4 border border-gray-200">
+    <div className={`${theme.card} rounded-lg p-4 border ${theme.border}`}>
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-medium text-gray-700">{t('admin.storage')}</span>
-        <span className="text-sm text-gray-600">
+        <span className={`text-sm font-medium ${theme.text}`}>{t('admin.storage')}</span>
+        <span className={`text-sm ${theme.textSecondary}`}>
           {t('storage.used', { used: formatBytes(used), total: formatBytes(total) })} ({percentage}%)
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+      <div className={`w-full ${theme.border} bg-opacity-30 rounded-full h-3 overflow-hidden`}>
         <div
           className={`h-3 rounded-full transition-all ${
             percentage > 90 ? 'bg-red-500' : percentage > 75 ? 'bg-yellow-500' : 'bg-primary-600'

@@ -3,9 +3,11 @@ import { useDropzone } from 'react-dropzone'
 import { fileAPI } from '../api'
 import { Upload, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useThemeStore } from '../store/themeStore'
 
 export default function UploadZone({ currentFolder, onUploadComplete }) {
   const { t } = useTranslation()
+  const { theme } = useThemeStore()
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState({})
   const [uploadedFiles, setUploadedFiles] = useState([])
@@ -51,13 +53,13 @@ export default function UploadZone({ currentFolder, onUploadComplete }) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 
   return (
-    <div className="card">
+    <div className={`${theme.card} rounded-lg p-6 border ${theme.border}`}>
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
           isDragActive
             ? 'border-primary-500 bg-primary-50'
-            : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+            : `${theme.border} ${theme.hover}`
         }`}
       >
         <input {...getInputProps()} />
@@ -66,10 +68,10 @@ export default function UploadZone({ currentFolder, onUploadComplete }) {
           <p className="text-lg font-medium text-primary-600">{t('upload.uploading')}</p>
         ) : (
           <>
-            <p className="text-lg font-medium text-gray-700 mb-2">
+            <p className={`text-lg font-medium ${theme.text} mb-2`}>
               {t('common.upload') || 'Upload Files'}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className={`text-sm ${theme.textSecondary}`}>
               {t('upload.dragDrop')}
             </p>
           </>

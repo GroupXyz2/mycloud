@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+import { useThemeStore } from '../store/themeStore'
 import { fileAPI, folderAPI, userAPI } from '../api'
 import Header from '../components/Header'
 import FileExplorer from '../components/FileExplorer'
@@ -11,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 export default function Dashboard() {
   const navigate = useNavigate()
   const user = useAuthStore((state) => state.user)
+  const { theme } = useThemeStore()
   const { t } = useTranslation()
   const [files, setFiles] = useState([])
   const [folders, setFolders] = useState([])
@@ -86,12 +88,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${theme.bg}`}>
       <Header />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className={`text-3xl font-bold ${theme.text} mb-2`}>
             {t('dashboard.welcome', { username: user?.username })}
           </h1>
           {storageStats && (
