@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useThemeStore } from '../store/themeStore'
+import { useTranslation } from 'react-i18next'
 
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') 
   ? import.meta.env.BASE_URL.slice(0, -1) 
@@ -8,8 +9,10 @@ const BASE_PATH = import.meta.env.BASE_URL.endsWith('/')
 
 export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext, hasPrevious }) {
   const [mediaUrl, setMediaUrl] = useState(null)
+  const [textContent, setTextContent] = useState(null)
   const [loading, setLoading] = useState(true)
   const { theme } = useThemeStore()
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (!file) return
@@ -29,11 +32,19 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
         }
         
         const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        setMediaUrl(url)
+        
+        if (file.mime_type?.startsWith('text/') || 
+            ['application/json', 'application/xml', 'application/javascript'].includes(file.mime_type) ||
+            file.original_name?.match(/\.(txt|md|json|xml|html|css|js|jsx|ts|tsx|py|java|c|cpp|h|sh|yml|yaml|toml|ini|conf|log)$/i)) {
+          const text = await blob.text()
+          setTextContent(text)
+        } else {
+          const url = window.URL.createObjectURL(blob)
+          setMediaUrl(url)
+        }
       } catch (error) {
         console.error('Error loading media:', error)
-        alert('Fehler beim Laden der Mediendatei')
+        alert(t('mediaViewer.loadError'))
       } finally {
         setLoading(false)
       }
@@ -52,6 +63,7 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
 
   const isImage = file.mime_type?.startsWith('image/')
   const isVideo = file.mime_type?.startsWith('video/')
+  const isText = textContent !== null
 
   const handleDownload = async () => {
     try {
@@ -74,7 +86,7 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (error) {
-      alert('Fehler beim Herunterladen')
+      alert(t('mediaViewer.downloadError'))
     }
   }
 
@@ -104,14 +116,14 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
             <button
               onClick={handleDownload}
               className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-              title="Herunterladen"
+              title={t('mediaViewer.download')}
             >
               <Download className="w-5 h-5" />
             </button>
             <button
               onClick={onClose}
               className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
-              title="Schließen (ESC)"
+              title={t('mediaViewer.close')}
             >
               <X className="w-6 h-6" />
             </button>
@@ -124,7 +136,7 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
         <button
           onClick={onPrevious}
           className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors z-10"
-          title="Vorheriges (←)"
+          title={t('mediaViewer.previous')}
         >
           <ChevronLeft className="w-8 h-8" />
         </button>
@@ -134,7 +146,7 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
         <button
           onClick={onNext}
           className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors z-10"
-          title="Nächstes (→)"
+          title={t('mediaViewer.next')}
         >
           <ChevronRight className="w-8 h-8" />
         </button>
@@ -143,9 +155,9 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
       {/* Media Content */}
       <div className="w-full h-full flex items-center justify-center p-20" onClick={onClose}>
         {loading ? (
-          <div className="text-white text-lg">Lädt...</div>
+          <div className="text-white text-lg">{t('mediaViewer.loading')}</div>
         ) : (
-          <div onClick={(e) => e.stopPropagation()} className="max-w-full max-h-full">
+          <div onClick={(e) => e.stopPropagation()} className="max-w-full max-h-full w-full">
             {isImage && mediaUrl && (
               <img
                 src={mediaUrl}
@@ -161,8 +173,15 @@ export default function MediaViewer({ file, onClose, onNext, onPrevious, hasNext
                 className="max-w-full max-h-full"
                 style={{ maxHeight: '80vh' }}
               >
-                Ihr Browser unterstützt keine Videowiedergabe.
+                {t('mediaViewer.videoNotSupported')}
               </video>
+            )}
+            {isText && (
+              <div className="w-full h-full max-h-[80vh] bg-gray-900 rounded-lg overflow-hidden">
+                <pre className="w-full h-full overflow-auto p-6 text-gray-100 font-mono text-sm whitespace-pre-wrap break-words">
+                  {textContent}
+                </pre>
+              </div>
             )}
           </div>
         )}

@@ -7,6 +7,7 @@ import Header from '../components/Header'
 import FileExplorer from '../components/FileExplorer'
 import UploadZone from '../components/UploadZone'
 import StorageBar from '../components/StorageBar'
+import Popup from '../components/Popup'
 import { useTranslation } from 'react-i18next'
 
 export default function Dashboard() {
@@ -17,8 +18,10 @@ export default function Dashboard() {
   const [files, setFiles] = useState([])
   const [folders, setFolders] = useState([])
   const [currentFolder, setCurrentFolder] = useState(null)
+  const [folderHistory, setFolderHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [storageStats, setStorageStats] = useState(null)
+  const [popup, setPopup] = useState(null)
 
   useEffect(() => {
     loadData()
@@ -56,14 +59,35 @@ export default function Dashboard() {
   }
 
   const handleFileDelete = async (fileId) => {
-    if (!confirm(t('fileExplorer.deleteFileConfirm'))) return
+    setPopup({
+      message: t('fileExplorer.deleteFileConfirm') || 'Delete this file?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await fileAPI.delete(fileId)
+          loadData()
+          loadStorageStats()
+        } catch (error) {
+          setPopup({ message: t('fileExplorer.deleteError'), type: 'error' })
+        }
+      }
+    })
+  }
 
-    try {
-      await fileAPI.delete(fileId)
-      loadData()
-      loadStorageStats()
-    } catch (error) {
-      alert(t('fileExplorer.deleteError'))
+  const handleFolderNavigate = (folderId) => {
+    if (folderId !== currentFolder) {
+      setFolderHistory(prev => [...prev, currentFolder])
+    }
+    setCurrentFolder(folderId)
+  }
+
+  const handleFolderBack = () => {
+    if (folderHistory.length > 0) {
+      const previousFolder = folderHistory[folderHistory.length - 1]
+      setFolderHistory(prev => prev.slice(0, -1))
+      setCurrentFolder(previousFolder)
+    } else {
+      setCurrentFolder(null)
     }
   }
 
@@ -72,19 +96,23 @@ export default function Dashboard() {
       await folderAPI.create({ name, parent_id: currentFolder })
       loadData()
     } catch (error) {
-      alert(t('fileExplorer.createFolderError'))
+      setPopup({ message: t('fileExplorer.createFolderError'), type: 'error' })
     }
   }
 
   const handleFolderDelete = async (folderId) => {
-    if (!confirm(t('fileExplorer.deleteFolderConfirm'))) return
-
-    try {
-      await folderAPI.delete(folderId)
-      loadData()
-    } catch (error) {
-      alert(t('fileExplorer.deleteError'))
-    }
+    setPopup({
+      message: t('fileExplorer.deleteFolderConfirm') || 'Delete this folder?',
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await folderAPI.delete(folderId)
+          loadData()
+        } catch (error) {
+          setPopup({ message: t('fileExplorer.deleteError'), type: 'error' })
+        }
+      }
+    })
   }
 
   return (
@@ -115,7 +143,8 @@ export default function Dashboard() {
             folders={folders}
             currentFolder={currentFolder}
             loading={loading}
-            onFolderClick={setCurrentFolder}
+            onFolderClick={handleFolderNavigate}
+            onFolderBack={handleFolderBack}
             onFolderCreate={handleFolderCreate}
             onFolderDelete={handleFolderDelete}
             onFileDelete={handleFileDelete}
@@ -123,6 +152,17 @@ export default function Dashboard() {
           />
         </div>
       </main>
+
+      {popup && (
+        <Popup
+          message={popup.message}
+          type={popup.type}
+          onClose={() => setPopup(null)}
+          onConfirm={popup.onConfirm}
+          confirmText={popup.confirmText}
+          cancelText={popup.cancelText}
+        />
+      )}
     </div>
   )
 }

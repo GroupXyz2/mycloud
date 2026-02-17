@@ -13,6 +13,8 @@ const themes = {
       primary: 'text-primary-600',
       primaryBg: 'bg-primary-600',
       primaryHover: 'hover:bg-primary-700',
+      selectedBg: 'bg-primary-50',
+      selectedBorder: 'border-primary-500',
     }
   },
   dark: {
@@ -27,6 +29,8 @@ const themes = {
       primary: 'text-primary-400',
       primaryBg: 'bg-primary-600',
       primaryHover: 'hover:bg-primary-700',
+      selectedBg: 'bg-primary-900',
+      selectedBorder: 'border-primary-600',
     }
   },
   midnight: {
@@ -41,6 +45,8 @@ const themes = {
       primary: 'text-blue-400',
       primaryBg: 'bg-blue-600',
       primaryHover: 'hover:bg-blue-700',
+      selectedBg: 'bg-blue-950',
+      selectedBorder: 'border-blue-600',
     }
   }
 }

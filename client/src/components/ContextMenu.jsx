@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useThemeStore } from '../store/themeStore'
 
 export default function ContextMenu({ position, items, onClose }) {
   const menuRef = useRef(null)
   const { theme } = useThemeStore()
+  const [adjustedPosition, setAdjustedPosition] = useState(position)
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -27,6 +28,29 @@ export default function ContextMenu({ position, items, onClose }) {
     }
   }, [onClose])
 
+  useEffect(() => {
+    if (menuRef.current && position) {
+      const menuRect = menuRef.current.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const viewportWidth = window.innerWidth
+      
+      let newX = position.x
+      let newY = position.y
+      
+      if (position.y + menuRect.height > viewportHeight) {
+        newY = position.y - menuRect.height
+      }
+      
+      if (position.x + menuRect.width > viewportWidth) {
+        newX = position.x - menuRect.width
+      }
+      
+      if (newX !== position.x || newY !== position.y) {
+        setAdjustedPosition({ x: newX, y: newY })
+      }
+    }
+  }, [position])
+
   if (!position) return null
 
   return (
@@ -34,8 +58,8 @@ export default function ContextMenu({ position, items, onClose }) {
       ref={menuRef}
       className={`fixed z-50 ${theme.card} rounded-lg shadow-lg border ${theme.border} py-1 min-w-[180px]`}
       style={{
-        top: `${position.y}px`,
-        left: `${position.x}px`,
+        top: `${adjustedPosition.y}px`,
+        left: `${adjustedPosition.x}px`,
       }}
     >
       {items.map((item, index) => (

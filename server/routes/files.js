@@ -13,6 +13,8 @@ const router = express.Router();
 const UPLOAD_PATH = process.env.UPLOAD_PATH || './data/uploads';
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE) || 524288000; // 500MB
 
+const extractingFiles = new Set();
+
 const storage = multer.diskStorage({
   destination: async (req, file, cb) => {
     const userDir = path.join(UPLOAD_PATH, req.user.id.toString());
@@ -408,9 +410,11 @@ router.put('/:id/rename', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
+    const mimeType = require('mime-types').lookup(name) || 'application/octet-stream';
+
     await runQuery(
-      'UPDATE files SET original_name = ? WHERE id = ?',
-      [name, id]
+      'UPDATE files SET original_name = ?, mime_type = ? WHERE id = ?',
+      [name, mimeType, id]
     );
 
     res.json({ message: 'File renamed successfully' });
@@ -421,9 +425,21 @@ router.put('/:id/rename', authenticateToken, async (req, res) => {
 });
 
 router.post('/:id/unzip', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const requestId = Date.now();
+  
   try {
-    const { id } = req.params;
     const { folder_id } = req.body;
+
+    console.log(`[Unzip] [${requestId}] Starting extraction for file ID: ${id}`);
+
+    if (extractingFiles.has(id)) {
+      console.log(`[Unzip] [${requestId}] File ${id} is already being extracted, rejecting duplicate request`);
+      return res.status(409).json({ error: 'This file is already being extracted. Please wait.' });
+    }
+
+    extractingFiles.add(id);
+    console.log(`[Unzip] [${requestId}] Added file ${id} to extraction queue. Queue size: ${extractingFiles.size}`);
 
     const file = await getQuery(
       'SELECT * FROM files WHERE id = ? AND user_id = ?',
@@ -431,16 +447,29 @@ router.post('/:id/unzip', authenticateToken, async (req, res) => {
     );
 
     if (!file) {
+      console.log(`[Unzip] [${requestId}] File not found: ${id}`);
+      extractingFiles.delete(id);
       return res.status(404).json({ error: 'File not found' });
     }
 
     if (!file.mime_type?.includes('zip') && !file.original_name.endsWith('.zip')) {
+      console.log(`[Unzip] [${requestId}] File is not a zip: ${file.original_name}`);
+      extractingFiles.delete(id);
       return res.status(400).json({ error: 'File is not a zip archive' });
     }
 
+    if (!fsSync.existsSync(file.path)) {
+      console.log(`[Unzip] [${requestId}] File path does not exist: ${file.path}`);
+      extractingFiles.delete(id);
+      return res.status(404).json({ error: 'File not found on disk' });
+    }
+
+    console.log(`[Unzip] [${requestId}] Reading zip file: ${file.path}`);
     const zip = new AdmZip(file.path);
     const zipEntries = zip.getEntries();
     
+    console.log(`[Unzip] [${requestId}] Found ${zipEntries.length} entries in archive`);
+
     let totalSize = 0;
     zipEntries.forEach(entry => {
       if (!entry.isDirectory) {
@@ -448,62 +477,195 @@ router.post('/:id/unzip', authenticateToken, async (req, res) => {
       }
     });
 
+    console.log(`[Unzip] [${requestId}] Total extracted size will be: ${totalSize} bytes`);
+
     const user = await getQuery(
       'SELECT storage_quota, storage_used FROM users WHERE id = ?',
       [req.user.id]
     );
 
     if (user.storage_used + totalSize > user.storage_quota) {
+      console.log(`[Unzip] [${requestId}] Storage quota exceeded. Used: ${user.storage_used}, Need: ${totalSize}, Quota: ${user.storage_quota}`);
+      extractingFiles.delete(id);
       return res.status(400).json({ error: 'Storage quota exceeded' });
     }
 
+    const folderName = file.original_name.replace(/\.zip$/i, '');
+    console.log(`[Unzip] [${requestId}] Creating folder: ${folderName}`);
+
+    let folderPath = folderName;
+    const targetFolderId = folder_id || file.folder_id;
+
+    if (targetFolderId) {
+      const parentFolder = await getQuery(
+        'SELECT path FROM folders WHERE id = ? AND user_id = ?',
+        [targetFolderId, req.user.id]
+      );
+      if (parentFolder) {
+        folderPath = parentFolder.path + '/' + folderName;
+      }
+    }
+
+    const existingFolder = await getQuery(
+      'SELECT id FROM folders WHERE user_id = ? AND path = ?',
+      [req.user.id, folderPath]
+    );
+
+    if (existingFolder) {
+      const timestamp = Date.now();
+      folderPath = targetFolderId ? 
+        (await getQuery('SELECT path FROM folders WHERE id = ?', [targetFolderId])).path + `/${folderName}_${timestamp}` :
+        `${folderName}_${timestamp}`;
+      console.log(`[Unzip] [${requestId}] Folder exists, using: ${folderPath}`);
+    }
+
+    const folderResult = await runQuery(
+      'INSERT INTO folders (name, parent_id, user_id, path) VALUES (?, ?, ?, ?)',
+      [folderPath.split('/').pop(), targetFolderId || null, req.user.id, folderPath]
+    );
+
+    const newFolderId = folderResult.lastID;
+    console.log(`[Unzip] [${requestId}] Created folder with ID: ${newFolderId}`);
+
     const extractPath = path.join(UPLOAD_PATH, req.user.id.toString());
     const filesAdded = [];
+    const folderCache = new Map(); 
+    folderCache.set(folderPath, newFolderId);
+
+    const getOrCreateFolder = async (entryPath, baseFolderId, baseFolderPath) => {
+      if (!entryPath || entryPath === '.') return baseFolderId;
+
+      const fullPath = `${baseFolderPath}/${entryPath}`;
+      
+      if (folderCache.has(fullPath)) {
+        return folderCache.get(fullPath);
+      }
+
+      const parts = entryPath.split('/').filter(p => p);
+      let currentParentId = baseFolderId;
+      let currentPath = baseFolderPath;
+
+      for (const part of parts) {
+        currentPath = `${currentPath}/${part}`;
+        
+        if (folderCache.has(currentPath)) {
+          currentParentId = folderCache.get(currentPath);
+          continue;
+        }
+
+        const existingFolder = await getQuery(
+          'SELECT id FROM folders WHERE user_id = ? AND path = ?',
+          [req.user.id, currentPath]
+        );
+
+        if (existingFolder) {
+          await runQuery(
+            'UPDATE folders SET parent_id = ? WHERE id = ?',
+            [currentParentId, existingFolder.id]
+          );
+          currentParentId = existingFolder.id;
+          folderCache.set(currentPath, existingFolder.id);
+        } else {
+          const result = await runQuery(
+            'INSERT INTO folders (name, parent_id, user_id, path) VALUES (?, ?, ?, ?)',
+            [part, currentParentId, req.user.id, currentPath]
+          );
+          const newFolderId = result.lastID;
+          currentParentId = newFolderId;
+          folderCache.set(currentPath, newFolderId);
+        }
+      }
+
+      return currentParentId;
+    };
+
+    console.log(`[Unzip] [${requestId}] Starting file extraction for ${zipEntries.filter(e => !e.isDirectory).length} files...`);
+    let extractedCount = 0;
+    let totalExtractedSize = 0;
+
+    await runQuery('BEGIN TRANSACTION');
 
     for (const entry of zipEntries) {
       if (!entry.isDirectory) {
-        const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${path.extname(entry.entryName)}`;
+        const entryName = entry.entryName.replace(/\\/g, '/'); 
+        
+        const lastSlashIndex = entryName.lastIndexOf('/');
+        const dirPath = lastSlashIndex > 0 ? entryName.substring(0, lastSlashIndex) : '';
+        const fileName = lastSlashIndex > 0 ? entryName.substring(lastSlashIndex + 1) : entryName;
+        
+        const parentFolderId = await getOrCreateFolder(
+          dirPath,
+          newFolderId,
+          folderPath
+        );
+
+        const uniqueName = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${path.extname(fileName)}`;
         const filePath = path.join(extractPath, uniqueName);
         
         zip.extractEntryTo(entry, extractPath, false, true, false, uniqueName);
         
         const stats = await fs.stat(filePath);
-        const mimeType = require('mime-types').lookup(entry.entryName) || 'application/octet-stream';
+        const mimeType = require('mime-types').lookup(fileName) || 'application/octet-stream';
 
         const result = await runQuery(
           `INSERT INTO files (name, original_name, path, size, mime_type, folder_id, user_id)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             uniqueName,
-            path.basename(entry.entryName),
+            fileName,
             filePath,
             stats.size,
             mimeType,
-            folder_id || file.folder_id,
+            parentFolderId,
             req.user.id
           ]
         );
 
         filesAdded.push({
           id: result.lastID,
-          name: path.basename(entry.entryName),
+          name: fileName,
           size: stats.size
         });
 
-        await runQuery(
-          'UPDATE users SET storage_used = storage_used + ? WHERE id = ?',
-          [stats.size, req.user.id]
-        );
+        totalExtractedSize += stats.size;
+        
+        extractedCount++;
+        if (extractedCount % 100 === 0) {
+          console.log(`[Unzip] [${requestId}] Progress: ${extractedCount}/${zipEntries.filter(e => !e.isDirectory).length} files extracted`);
+        }
       }
     }
 
+    await runQuery('COMMIT');
+
+    await runQuery(
+      'UPDATE users SET storage_used = storage_used + ? WHERE id = ?',
+      [totalExtractedSize, req.user.id]
+    );
+
+    console.log(`[Unzip] [${requestId}] Successfully extracted ${filesAdded.length} files into folder ${newFolderId}`);
+
+    extractingFiles.delete(id);
+    console.log(`[Unzip] [${requestId}] Removed file ${id} from extraction queue. Queue size: ${extractingFiles.size}`);
+
     res.json({
       message: 'Files extracted successfully',
-      files: filesAdded
+      files: filesAdded,
+      folderId: newFolderId,
+      folderName: folderPath.split('/').pop()
     });
   } catch (error) {
-    console.error('Unzip error:', error);
-    res.status(500).json({ error: 'Failed to extract archive' });
+    console.error(`[Unzip] [${requestId}] Error:`, error);
+    
+    try {
+      await runQuery('ROLLBACK');
+    } catch (rollbackError) {
+      console.error(`[Unzip] [${requestId}] Rollback error:`, rollbackError);
+    }
+    
+    extractingFiles.delete(id);
+    console.log(`[Unzip] [${requestId}] Removed file ${id} from extraction queue (error). Queue size: ${extractingFiles.size}`);
+    res.status(500).json({ error: 'Failed to extract archive', details: error.message });
   }
 });
 

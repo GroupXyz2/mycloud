@@ -8,6 +8,7 @@ import { fileAPI } from '../api'
 import { useThemeStore } from '../store/themeStore'
 import MediaViewer from './MediaViewer'
 import ContextMenu from './ContextMenu'
+import Popup from './Popup'
 import { useTranslation } from 'react-i18next'
 
 const BASE_PATH = import.meta.env.BASE_URL.endsWith('/') 
@@ -20,6 +21,7 @@ export default function FileExplorer({
   currentFolder,
   loading,
   onFolderClick,
+  onFolderBack,
   onFolderCreate,
   onFolderDelete,
   onFileDelete,
@@ -36,6 +38,11 @@ export default function FileExplorer({
   const [selectedFiles, setSelectedFiles] = useState(new Set())
   const [renameDialog, setRenameDialog] = useState(null)
   const [dragOver, setDragOver] = useState(null)
+  const [extractingFile, setExtractingFile] = useState(null)
+  const [popup, setPopup] = useState(null)
+  const [viewingTrash, setViewingTrash] = useState(false)
+  const [trashedFiles, setTrashedFiles] = useState([])
+  const [loadingTrash, setLoadingTrash] = useState(false)
 
   const handleCreateFolder = (e) => {
     e.preventDefault()
@@ -55,7 +62,7 @@ export default function FileExplorer({
       navigator.clipboard.writeText(fullUrl)
       setTimeout(() => setShareUrl(null), 3000)
     } catch (error) {
-      alert(t('fileExplorer.shareError'))
+      setPopup({ message: t('fileExplorer.shareError'), type: 'error' })
     }
   }
 
@@ -83,69 +90,157 @@ export default function FileExplorer({
       document.body.removeChild(a)
     } catch (error) {
       console.error('Download error:', error)
-      alert(t('fileExplorer.downloadError'))
+      setPopup({ message: t('fileExplorer.downloadError'), type: 'error' })
     }
   }
 
   const handleCopy = async (fileId) => {
     try {
       await fileAPI.copy(fileId, currentFolder)
-      onRefresh()
-      alert('File copied successfully')
+      await onRefresh()
+      setPopup({ message: t('fileExplorer.copySuccess'), type: 'success' })
     } catch (error) {
-      alert('Failed to copy file')
+      setPopup({ message: t('fileExplorer.copyError'), type: 'error' })
     }
   }
 
   const handleRename = async (fileId, newName) => {
     try {
       await fileAPI.rename(fileId, newName)
-      onRefresh()
+      await onRefresh()
       setRenameDialog(null)
     } catch (error) {
-      alert('Failed to rename file')
+      setPopup({ message: t('fileExplorer.renameError'), type: 'error' })
     }
   }
 
   const handleUnzip = async (fileId) => {
+    if (extractingFile === fileId) {
+      return
+    }
+    
+    setExtractingFile(fileId)
+    
     try {
-      await fileAPI.unzip(fileId, currentFolder)
-      onRefresh()
-      alert('Files extracted successfully')
+      const response = await fileAPI.unzip(fileId, currentFolder)
+      await onRefresh()
+      setExtractingFile(null)
+      
+      const { files, folderName } = response.data
+      setPopup({ 
+        message: t('fileExplorer.extractSuccess', { count: files.length, folder: folderName }), 
+        type: 'success' 
+      })
     } catch (error) {
-      alert('Failed to extract archive')
+      setExtractingFile(null)
+      
+      if (error.response?.status === 409) {
+        setPopup({ message: t('fileExplorer.extractInProgress'), type: 'error' })
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setPopup({ message: t('fileExplorer.extractTimeout'), type: 'error' })
+      } else if (error.response?.data?.error) {
+        setPopup({ message: t('fileExplorer.extractError', { error: error.response.data.error }), type: 'error' })
+      } else {
+        setPopup({ message: t('fileExplorer.extractErrorGeneric', { error: error.message }), type: 'error' })
+      }
     }
   }
 
   const handleToggleFavorite = async (fileId, isFavorite) => {
     try {
       await fileAPI.toggleFavorite(fileId, !isFavorite)
-      onRefresh()
+      await onRefresh()
     } catch (error) {
-      alert('Failed to update favorite')
+      console.error('Toggle favorite error:', error)
+      setPopup({ message: t('fileExplorer.favoriteError'), type: 'error' })
     }
   }
 
   const handleMoveToTrash = async (fileId) => {
+    setPopup({
+      message: t('fileExplorer.deleteFileConfirm'),
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await fileAPI.moveToTrash(fileId)
+          await onRefresh()
+        } catch (error) {
+          console.error('Move to trash error:', error)
+          setPopup({ message: t('fileExplorer.deleteError'), type: 'error' })
+        }
+      }
+    })
+  }
+
+  const loadTrash = async () => {
     try {
-      await fileAPI.moveToTrash(fileId)
-      onRefresh()
+      setLoadingTrash(true)
+      const response = await fileAPI.getTrash()
+      setTrashedFiles(response.data)
     } catch (error) {
-      alert('Failed to move to trash')
+      setPopup({ message: t('fileExplorer.loadTrashError'), type: 'error' })
+    } finally {
+      setLoadingTrash(false)
     }
+  }
+
+  const handleViewTrash = () => {
+    setViewingTrash(true)
+    loadTrash()
+  }
+
+  const handleCloseTrash = () => {
+    setViewingTrash(false)
+    setTrashedFiles([])
+  }
+
+  const handleRestoreFile = async (fileId) => {
+    try {
+      await fileAPI.restoreFromTrash(fileId)
+      await loadTrash()
+      await onRefresh()
+    } catch (error) {
+      console.error('Restore error:', error)
+      setPopup({ message: t('fileExplorer.restoreError'), type: 'error' })
+    }
+  }
+
+  const handleEmptyTrash = async () => {
+    setPopup({
+      message: t('fileExplorer.emptyTrashConfirm'),
+      type: 'confirm',
+      confirmText: t('fileExplorer.emptyTrash'),
+      onConfirm: async () => {
+        try {
+          await fileAPI.emptyTrash()
+          setTrashedFiles([])
+          await onRefresh()
+        } catch (error) {
+          console.error('Empty trash error:', error)
+          setPopup({ message: t('fileExplorer.emptyTrashError'), type: 'error' })
+        }
+      }
+    })
   }
 
   const handleBulkDelete = async () => {
     if (selectedFiles.size === 0) return
-    if (!confirm(`Delete ${selectedFiles.size} files?`)) return
     
-    try {
-      await fileAPI.bulkDelete(Array.from(selectedFiles))
-      setSelectedFiles(new Set())
-      onRefresh()
-    } catch (error) {
-      alert('Failed to delete files')
-    }
+    const fileCount = selectedFiles.size
+    setPopup({
+      message: t('fileExplorer.bulkDeleteConfirm', { count: fileCount }),
+      type: 'confirm',
+      onConfirm: async () => {
+        try {
+          await fileAPI.bulkDelete(Array.from(selectedFiles))
+          setSelectedFiles(new Set())
+          await onRefresh()
+        } catch (error) {
+          console.error('Bulk delete error:', error)
+          setPopup({ message: t('fileExplorer.bulkDeleteError'), type: 'error' })
+        }
+      }
+    })
   }
 
   const handleBulkDownload = async () => {
@@ -162,7 +257,8 @@ export default function FileExplorer({
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (error) {
-      alert('Failed to download files')
+      console.error('Bulk download error:', error)
+      setPopup({ message: t('fileExplorer.bulkDownloadError'), type: 'error' })
     }
   }
 
@@ -208,9 +304,10 @@ export default function FileExplorer({
 
     try {
       await fileAPI.move(fileId, folderId)
-      onRefresh()
+      await onRefresh()
     } catch (error) {
-      alert('Failed to move file')
+      console.error('Move error:', error)
+      setPopup({ message: t('fileExplorer.moveError'), type: 'error' })
     }
   }
 
@@ -292,12 +389,22 @@ export default function FileExplorer({
     return File
   }
 
-  const isMediaFile = (mimeType) => {
-    return mimeType?.startsWith('image/') || mimeType?.startsWith('video/')
+  const isMediaFile = (mimeType, fileName) => {
+    if (mimeType?.startsWith('image/') || mimeType?.startsWith('video/')) {
+      return true
+    }
+    if (mimeType?.startsWith('text/') || 
+        ['application/json', 'application/xml', 'application/javascript'].includes(mimeType)) {
+      return true
+    }
+    if (fileName?.match(/\.(txt|md|json|xml|html|css|js|jsx|ts|tsx|py|java|c|cpp|h|sh|yml|yaml|toml|ini|conf|log)$/i)) {
+      return true
+    }
+    return false
   }
 
   const handleViewMedia = (file) => {
-    const mediaFilesList = files.filter(f => isMediaFile(f.mime_type))
+    const mediaFilesList = files.filter(f => isMediaFile(f.mime_type, f.original_name))
     setMediaFiles(mediaFilesList)
     setViewingMedia(file)
   }
@@ -322,11 +429,11 @@ export default function FileExplorer({
         <div className="flex items-center gap-2">
           {currentFolder && (
             <button
-              onClick={() => onFolderClick(null)}
+              onClick={onFolderBack}
               className={`p-2 ${theme.hover} rounded-lg transition-colors`}
               title={t('common.back')}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className={`w-5 h-5 ${theme.text}`} />
             </button>
           )}
           <h2 className={`text-xl font-semibold ${theme.text}`}>
@@ -354,20 +461,58 @@ export default function FileExplorer({
               </button>
             </>
           )}
-          <button
-            onClick={onRefresh}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            {t('common.refresh')}
-          </button>
-          <button
-            onClick={() => setShowNewFolder(true)}
-            className="btn btn-primary flex items-center gap-2"
-          >
-            <FolderPlus className="w-4 h-4" />
-            {t('fileExplorer.newFolder')}
-          </button>
+          {!viewingTrash && (
+            <>
+              <button
+                onClick={onRefresh}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {t('common.refresh')}
+              </button>
+              <button
+                onClick={handleViewTrash}
+                className="btn btn-secondary flex items-center gap-2"
+                title={t('fileExplorer.viewTrash')}
+              >
+                <Trash2 className="w-4 h-4" />
+                {t('fileExplorer.trash')}
+              </button>
+              <button
+                onClick={() => setShowNewFolder(true)}
+                className="btn btn-primary flex items-center gap-2"
+              >
+                <FolderPlus className="w-4 h-4" />
+                {t('fileExplorer.newFolder')}
+              </button>
+            </>
+          )}
+          {viewingTrash && (
+            <>
+              <button
+                onClick={loadTrash}
+                className="btn btn-secondary flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {t('common.refresh')}
+              </button>
+              {trashedFiles.length > 0 && (
+                <button
+                  onClick={handleEmptyTrash}
+                  className="btn bg-red-600 hover:bg-red-700 text-white flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {t('fileExplorer.emptyTrash')}
+                </button>
+              )}
+              <button
+                onClick={handleCloseTrash}
+                className="btn btn-primary flex items-center gap-2"
+              >
+                {t('fileExplorer.backToFiles')}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -459,11 +604,56 @@ export default function FileExplorer({
         />
       )}
 
-      {loading ? (
+      {loading || loadingTrash ? (
         <div className="text-center py-12">
           <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-3" />
           <p className={theme.textSecondary}>{t('common.loading')}</p>
         </div>
+      ) : viewingTrash ? (
+        <>
+          <div className="mb-4">
+            <h3 className={`text-lg font-semibold ${theme.text}`}>
+              {t('fileExplorer.trashCount', { count: trashedFiles.length })}
+            </h3>
+            <p className={`text-sm ${theme.textSecondary}`}>
+              {t('fileExplorer.trashNote')}
+            </p>
+          </div>
+
+          {trashedFiles.length === 0 ? (
+            <div className="text-center py-12">
+              <Trash2 className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+              <p className={theme.textSecondary}>{t('fileExplorer.trashEmpty')}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {trashedFiles.map((file) => {
+                const FileIcon = getFileIcon(file.mime_type)
+                return (
+                  <div
+                    key={`trash-${file.id}`}
+                    className={`flex items-center gap-4 p-4 rounded-lg border ${theme.border} ${theme.hover} transition-colors group`}
+                  >
+                    <FileIcon className="w-10 h-10 text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`font-medium ${theme.text} truncate`}>{file.original_name}</h3>
+                      <p className={`text-sm ${theme.textSecondary}`}>
+                        {formatBytes(file.size)} • {t('fileExplorer.deleted')} {formatDate(file.trashed_at)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRestoreFile(file.id)}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      title={t('fileExplorer.restore')}
+                    >
+                      {t('fileExplorer.restore')}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       ) : (
         <>
           {currentFolder && (
@@ -490,7 +680,7 @@ export default function FileExplorer({
                 {selectedFiles.size === files.length ? (
                   <CheckSquare className="w-5 h-5 text-primary-600" />
                 ) : (
-                  <Square className="w-5 h-5" />
+                  <Square className={`w-5 h-5 ${theme.text}`} />
                 )}
               </button>
               <span className={`text-sm ${theme.textSecondary}`}>
@@ -536,8 +726,8 @@ export default function FileExplorer({
               return (
                 <div
                   key={`file-${file.id}`}
-                  className={`flex items-center gap-4 p-4 ${theme.hover} rounded-lg border transition-colors group ${
-                    isSelected ? 'border-primary-500 bg-primary-50' : theme.border
+                  className={`flex items-center gap-4 p-4 rounded-lg border transition-colors group ${
+                    isSelected ? `${theme.selectedBorder} ${theme.selectedBg}` : `${theme.border} ${theme.hover}`
                   }`}
                   draggable
                   onDragStart={(e) => handleDragStart(e, file)}
@@ -550,7 +740,7 @@ export default function FileExplorer({
                     {isSelected ? (
                       <CheckSquare className="w-5 h-5 text-primary-600" />
                     ) : (
-                      <Square className="w-5 h-5 text-gray-400" />
+                      <Square className={`w-5 h-5 ${theme.textSecondary}`} />
                     )}
                   </button>
                   <FileIcon className="w-10 h-10 text-gray-400 flex-shrink-0" />
@@ -564,7 +754,7 @@ export default function FileExplorer({
                     </p>
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {isMediaFile(file.mime_type) && (
+                    {isMediaFile(file.mime_type, file.original_name) && (
                       <button
                         onClick={() => handleViewMedia(file)}
                         className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
@@ -574,12 +764,22 @@ export default function FileExplorer({
                       </button>
                     )}
                     <button
-                      onClick={() => handleToggleFavorite(file.id, file.is_favorite)}
-                      className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg"
-                      title="Toggle favorite"
+                      onClick={() => setRenameDialog({ id: file.id, name: file.original_name })}
+                      className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg"
+                      title="Rename"
                     >
-                      <Star className={`w-5 h-5 ${file.is_favorite ? 'fill-yellow-500' : ''}`} />
+                      <Edit3 className="w-5 h-5" />
                     </button>
+                    {(file.mime_type?.includes('zip') || file.original_name?.endsWith('.zip')) && (
+                      <button
+                        onClick={() => handleUnzip(file.id)}
+                        disabled={extractingFile === file.id}
+                        className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={extractingFile === file.id ? 'Extracting...' : 'Extract archive'}
+                      >
+                        <Archive className={`w-5 h-5 ${extractingFile === file.id ? 'animate-pulse' : ''}`} />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDownload(file.id, file.original_name)}
                       className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
@@ -617,6 +817,17 @@ export default function FileExplorer({
             )}
           </div>
         </>
+      )}
+
+      {popup && (
+        <Popup
+          message={popup.message}
+          type={popup.type}
+          onClose={() => setPopup(null)}
+          onConfirm={popup.onConfirm}
+          confirmText={popup.confirmText}
+          cancelText={popup.cancelText}
+        />
       )}
     </div>
   )
