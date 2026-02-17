@@ -13,7 +13,7 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - **File Sharing** - Share files securely via public links
 - **Storage Quotas** - Configurable storage limits per user
 - **Modern Interface** - Built with React and Tailwind CSS for a responsive, intuitive experience
-- **Mobile Apps** - Native Android and iOS apps via Capacitor (see [MOBILE_SETUP.md](MOBILE_SETUP.md))
+- **Mobile Apps** - Native Android and iOS apps via Capacitor
 - **PWA Support** - Progressive Web App for installable web experience
 - **Docker Support** - Containerized deployment for easy setup and maintenance
 - **JWT Authentication** - Secure token-based authentication system
@@ -23,7 +23,7 @@ A comprehensive, self-hosted cloud storage platform with admin-managed user syst
 - [Quick Start for Local Network Use](#quick-start-for-local-network-use)
 - [Quick Start for Online Use with Docker and HTTPS](#quick-start-for-online-use-with-docker-and-https)
 - [Manual Installation (without Docker)](#manual-installation-without-docker)
-- [Mobile App Setup (Android/iOS)](#mobile-app-setup)
+- [Mobile App Setup (Android/iOS)](#mycloud-mobile-app-setup)
 - [Usage Guide](#usage-guide)
 - [Configuration](#configuration)
 - [Production Deployment](#production-deployment)
@@ -297,10 +297,6 @@ NODE_ENV=production npm start
 ```
 
 Access the application at `http://localhost:6868` (or your server's IP/hostname).
-
-## Mobile App Setup
-
-MyCloud can be built as native Android and iOS mobile apps using Capacitor, which wraps the web application in a native container with access to device features.
 
 ### Features
 - ✅ Native iOS and Android apps
@@ -772,6 +768,156 @@ sudo docker compose -f docker-compose.local.yml up -d
 docker inspect mycloud | grep -A 5 Mounts
 ls -la /mnt/external-disk/mycloud-data/
 ```
+
+# MyCloud Mobile App Setup
+
+This guide explains how to build and run MyCloud as a native Android/iOS mobile app using Capacitor.
+
+## Prerequisites
+
+### For Android Development:
+- Node.js 16+ and npm
+- Android Studio (latest version)
+- Java Development Kit (JDK) 11 or later
+- Android SDK (installed via Android Studio)
+
+### For iOS Development (macOS only):
+- Node.js 16+ and npm
+- Xcode 14+ (from Mac App Store)
+- CocoaPods (`sudo gem install cocoapods`)
+- iOS SDK (installed via Xcode)
+
+## Initial Setup
+
+### 1. Install Dependencies
+
+```bash
+# Navigate to the client directory
+cd client
+
+# Install all dependencies including Capacitor packages
+npm install
+```
+
+### 2. Build the Web App
+
+```bash
+# From the root directory
+npm run build
+```
+
+This creates an optimized production build in `client/dist` with PWA support.
+
+**Note:** Set "http" in `capacitor.config.ts` to "https" if used in production/online mode.
+
+## Android Setup
+
+### 1. Add Android Platform
+
+```bash
+# From the root project directory
+npx cap add android
+```
+
+This creates an `android/` directory with a native Android project.
+
+### 2. Sync Web Assets to Android
+
+```bash
+# Copy web build to native project
+npm run sync
+
+# Or use Capacitor CLI directly:
+npx cap sync android
+```
+
+### 3. Open Android Studio
+
+```bash
+npm run android
+# This opens Android Studio with the project
+```
+
+Or manually:
+```bash
+npx cap open android
+```
+
+### 4. Run on Device/Emulator
+
+In Android Studio:
+1. Wait for Gradle sync to complete
+2. Connect an Android device via USB (with USB debugging enabled) or start an emulator
+3. Click the "Run" button (green play icon) or press Shift+F10
+4. Select your device from the list
+
+The app will install and launch on your device.
+
+## iOS Setup (macOS only)
+
+### 1. Add iOS Platform
+
+```bash
+# From the root project directory
+npx cap add ios
+```
+
+This creates an `ios/` directory with a native iOS Xcode project.
+
+### 2. Sync Web Assets to iOS
+
+```bash
+npm run sync
+
+# Or use Capacitor CLI directly:
+npx cap sync ios
+```
+
+### 3. Install CocoaPods Dependencies
+
+```bash
+cd ios/App
+pod install
+cd ../..
+```
+
+### 4. Open Xcode
+
+```bash
+npm run ios
+# This opens Xcode with the project
+```
+
+Or manually:
+```bash
+npx cap open ios
+```
+
+### 5. Run on Device/Simulator
+
+In Xcode:
+1. Select your development team in the "Signing & Capabilities" tab
+2. Select a target device or simulator
+3. Click the "Run" button (play icon) or press Cmd+R
+
+The app will install and launch on your device/simulator.
+
+### Making Changes
+
+After modifying the web app code:
+
+1. **Rebuild the web app:**
+   ```bash
+   cd client
+   npm run build
+   ```
+
+2. **Sync changes to native projects:**
+   ```bash
+   npm run sync
+   ```
+
+3. **Rerun the app** in Android Studio or Xcode
 
 ## Support
 

@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'MyCloud',
   webDir: 'client/dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'http' // Change in production/online mode to https
   },
   plugins: {
     SplashScreen: {
