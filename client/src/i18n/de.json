@@ -81,6 +81,7 @@
     "bulkDeleteConfirm_plural": "{{count}} Dateien löschen?",
     "bulkDeleteError": "Fehler beim Löschen der Dateien",
     "bulkDownloadError": "Fehler beim Herunterladen der Dateien",
+    "bulkDownloadInfo": "Große Dateien werden heruntergeladen, dies kann einen Moment dauern...",
     "moveError": "Fehler beim Verschieben der Datei"
   },
   "upload": {

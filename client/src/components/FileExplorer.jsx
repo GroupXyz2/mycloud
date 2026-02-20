@@ -43,6 +43,7 @@ export default function FileExplorer({
   const [viewingTrash, setViewingTrash] = useState(false)
   const [trashedFiles, setTrashedFiles] = useState([])
   const [loadingTrash, setLoadingTrash] = useState(false)
+  const [downloadingBulk, setDownloadingBulk] = useState(false)
 
   const handleCreateFolder = (e) => {
     e.preventDefault()
@@ -244,7 +245,20 @@ export default function FileExplorer({
   }
 
   const handleBulkDownload = async () => {
-    if (selectedFiles.size === 0) return
+    if (selectedFiles.size === 0 || downloadingBulk) return
+    
+    const selectedFileObjects = files.filter(f => selectedFiles.has(f.id))
+    const totalSize = selectedFileObjects.reduce((sum, file) => sum + (file.size || 0), 0)
+    const sizeInMB = totalSize / (1024 * 1024)
+    
+    if (sizeInMB > 100) {
+      setPopup({ 
+        message: t('fileExplorer.bulkDownloadInfo'), 
+        type: 'info' 
+      })
+    }
+    
+    setDownloadingBulk(true)
     
     try {
       const response = await fileAPI.bulkDownload(Array.from(selectedFiles))
@@ -259,6 +273,8 @@ export default function FileExplorer({
     } catch (error) {
       console.error('Bulk download error:', error)
       setPopup({ message: t('fileExplorer.bulkDownloadError'), type: 'error' })
+    } finally {
+      setDownloadingBulk(false)
     }
   }
 
@@ -447,7 +463,8 @@ export default function FileExplorer({
               <span className="text-sm text-gray-600">{selectedFiles.size} selected</span>
               <button
                 onClick={handleBulkDownload}
-                className="btn btn-secondary flex items-center gap-2"
+                disabled={downloadingBulk}
+                className="btn btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Download selected"
               >
                 <Download className="w-4 h-4" />

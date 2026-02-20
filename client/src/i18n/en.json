@@ -81,6 +81,7 @@
     "bulkDeleteConfirm_plural": "Delete {{count}} files?",
     "bulkDeleteError": "Failed to delete files",
     "bulkDownloadError": "Failed to download files",
+    "bulkDownloadInfo": "Downloading large files, this may take a moment...",
     "moveError": "Failed to move file"
   },
   "upload": {
