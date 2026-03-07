@@ -43,6 +43,8 @@
     "deleteFileConfirm": "Möchten Sie diese Datei wirklich löschen?",
     "deleteFolderConfirm": "Möchten Sie diesen Ordner wirklich löschen?",
     "shareError": "Fehler beim Teilen der Datei",
+    "shareCopied": "Link in Zwischenablage kopiert",
+    "shareLinkReady": "Freigabe-Link",
     "downloadError": "Fehler beim Herunterladen der Datei",
     "deleteError": "Fehler beim Löschen",
     "createFolderError": "Fehler beim Erstellen des Ordners",

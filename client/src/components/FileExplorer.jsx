@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { 
   File, Folder, Download, Trash2, Share2, FolderPlus, 
   RefreshCw, ChevronLeft, Link as LinkIcon, Eye, Image as ImageIcon, Video,
-  Star, Copy, Edit3, Archive, CheckSquare, Square, Home
+  Star, Copy, Edit3, Archive, CheckSquare, Square, Home, X, CheckCircle
 } from 'lucide-react'
 import { fileAPI } from '../api'
 import { useThemeStore } from '../store/themeStore'
@@ -44,6 +44,7 @@ export default function FileExplorer({
   const [trashedFiles, setTrashedFiles] = useState([])
   const [loadingTrash, setLoadingTrash] = useState(false)
   const [downloadingBulk, setDownloadingBulk] = useState(false)
+  const [shareDialog, setShareDialog] = useState(null)
 
   const handleCreateFolder = (e) => {
     e.preventDefault()
@@ -59,12 +60,23 @@ export default function FileExplorer({
       const response = await fileAPI.share(fileId, {})
       const backendUrl = response.data.shareUrl
       const fullUrl = `${window.location.origin}${BASE_PATH}${backendUrl}`
-      setShareUrl(fullUrl)
-      navigator.clipboard.writeText(fullUrl)
-      setTimeout(() => setShareUrl(null), 3000)
+      setShareDialog({ url: fullUrl, copied: false })
     } catch (error) {
-      setPopup({ message: t('fileExplorer.shareError'), type: 'error' })
+      const msg = error?.response?.data?.error || error?.message || 'Unknown error'
+      setPopup({ message: `Share failed: ${msg}`, type: 'error' })
     }
+  }
+
+  const handleShareCopy = async () => {
+    if (!shareDialog) return
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(shareDialog.url)
+    } else {
+      const el = document.getElementById('share-url-input')
+      if (el) { el.select(); document.execCommand('copy') }
+    }
+    setShareDialog(prev => ({ ...prev, copied: true }))
+    setTimeout(() => setShareDialog(prev => prev ? { ...prev, copied: false } : null), 2000)
   }
 
   const handleDownload = async (fileId, fileName) => {
@@ -845,6 +857,52 @@ export default function FileExplorer({
           confirmText={popup.confirmText}
           cancelText={popup.cancelText}
         />
+      )}
+
+      {shareDialog && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShareDialog(null)}
+        >
+          <div
+            className={`${theme.card} ${theme.text} rounded-lg shadow-2xl w-full max-w-lg p-6 border ${theme.border}`}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <LinkIcon className="w-5 h-5 text-blue-500" />
+                <span className="font-semibold text-lg">{t('fileExplorer.shareLinkReady')}</span>
+              </div>
+              <button
+                onClick={() => setShareDialog(null)}
+                className={`p-1 rounded-lg transition-colors ${theme.hover} ${theme.textSecondary}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className={`flex items-center gap-2 rounded-lg border ${theme.border} p-2 ${theme.input || theme.card}`}>
+              <input
+                id="share-url-input"
+                type="text"
+                readOnly
+                value={shareDialog.url}
+                className={`flex-1 bg-transparent outline-none text-sm select-all ${theme.text}`}
+                onFocus={e => e.target.select()}
+              />
+              <button
+                onClick={handleShareCopy}
+                className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  shareDialog.copied
+                    ? 'bg-green-600 text-white'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
+                }`}
+              >
+                {shareDialog.copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {shareDialog.copied ? t('fileExplorer.shareCopied') : 'Copy'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

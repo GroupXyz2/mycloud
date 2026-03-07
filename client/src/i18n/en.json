@@ -43,6 +43,8 @@
     "deleteFileConfirm": "Do you really want to delete this file?",
     "deleteFolderConfirm": "Do you really want to delete this folder?",
     "shareError": "Error sharing file",
+    "shareCopied": "Link copied to clipboard",
+    "shareLinkReady": "Share link",
     "downloadError": "Error downloading file",
     "deleteError": "Error deleting",
     "createFolderError": "Error creating folder",
