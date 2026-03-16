@@ -89,6 +89,10 @@ export const fileAPI = {
   bulkDownload: (fileIds) => api.post('/files/bulk/download', { file_ids: fileIds }, { responseType: 'blob' }),
 }
 
+export const configAPI = {
+  getConfig: () => api.get('/config'),
+}
+
 export const folderAPI = {
   getFolders: (parentId = null) => api.get('/folders', { params: { parent_id: parentId } }),
   getTree: () => api.get('/folders/tree'),

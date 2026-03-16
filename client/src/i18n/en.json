@@ -18,6 +18,7 @@
   "nav": {
     "myFiles": "My Files",
     "admin": "Admin",
+    "sftp": "SFTP",
     "logout": "Logout"
   },
   "login": {

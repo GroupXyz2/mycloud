@@ -1,14 +1,21 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { useThemeStore } from '../store/themeStore'
-import { Cloud, LogOut, Settings, Home, Languages, Palette } from 'lucide-react'
+import { Cloud, LogOut, Settings, Home, Languages, Palette, HardDrive } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { configAPI } from '../api'
 
 export default function Header() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const { t, i18n } = useTranslation()
   const { theme, themeName, cycleTheme } = useThemeStore()
+  const [sftpPort, setSftpPort] = useState(22)
+
+  useEffect(() => {
+    configAPI.getConfig().then(res => setSftpPort(res.data.sftpPort)).catch(() => {})
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -19,6 +26,12 @@ export default function Header() {
     const newLang = i18n.language === 'de' ? 'en' : 'de'
     i18n.changeLanguage(newLang)
     localStorage.setItem('language', newLang)
+  }
+
+  const handleSftp = () => {
+    const host = window.location.hostname
+    const portSuffix = sftpPort === 22 ? '' : `:${sftpPort}`
+    window.open(`sftp://${user.username}@${host}${portSuffix}`, '_self')
   }
 
   return (
@@ -37,6 +50,15 @@ export default function Header() {
             >
               <Home className="w-5 h-5" />
               <span className="hidden sm:inline">{t('nav.myFiles')}</span>
+            </button>
+
+            <button
+              onClick={handleSftp}
+              className={`flex items-center gap-2 px-4 py-2 ${theme.text} hover:text-primary-600 transition-colors`}
+              title={t('nav.sftp')}
+            >
+              <HardDrive className="w-5 h-5" />
+              <span className="hidden sm:inline">{t('nav.sftp')}</span>
             </button>
 
             {user?.isAdmin && (

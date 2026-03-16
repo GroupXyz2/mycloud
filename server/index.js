@@ -10,6 +10,7 @@ const userRoutes = require('./routes/users');
 const fileRoutes = require('./routes/files');
 const folderRoutes = require('./routes/folders');
 const { initDatabase } = require('./database/init');
+const { startSFTPServer } = require('./sftp');
 
 const app = express();
 const PORT = process.env.PORT || 6868;
@@ -30,6 +31,10 @@ app.use(cors({
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.get('/api/config', (req, res) => {
+  res.json({ sftpPort: parseInt(process.env.SFTP_PORT) || 22 });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -58,6 +63,7 @@ initDatabase()
       console.log(`🚀 MyCloud server running on port ${PORT}`);
       console.log(`📁 Upload path: ${process.env.UPLOAD_PATH || './data/uploads'}`);
     });
+    startSFTPServer();
   })
   .catch(err => {
     console.error('Failed to initialize database:', err);
