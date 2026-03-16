@@ -427,6 +427,8 @@ router.put('/:id/rename', authenticateToken, async (req, res) => {
 router.post('/:id/unzip', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const requestId = Date.now();
+  let transactionStarted = false;
+  const maxAdmZipSize = 2 * 1024 * 1024 * 1024;
   
   try {
     const { folder_id } = req.body;
@@ -462,6 +464,14 @@ router.post('/:id/unzip', authenticateToken, async (req, res) => {
       console.log(`[Unzip] [${requestId}] File path does not exist: ${file.path}`);
       extractingFiles.delete(id);
       return res.status(404).json({ error: 'File not found on disk' });
+    }
+
+    if (Number(file.size) > maxAdmZipSize) {
+      console.log(`[Unzip] [${requestId}] Archive too large for adm-zip: ${file.size} bytes`);
+      extractingFiles.delete(id);
+      return res.status(413).json({
+        error: 'Archive too large to extract in web interface (limit: 2 GiB). Please extract this archive externally and re-upload the contents.'
+      });
     }
 
     console.log(`[Unzip] [${requestId}] Reading zip file: ${file.path}`);
@@ -584,6 +594,7 @@ router.post('/:id/unzip', authenticateToken, async (req, res) => {
     let totalExtractedSize = 0;
 
     await runQuery('BEGIN TRANSACTION');
+    transactionStarted = true;
 
     for (const entry of zipEntries) {
       if (!entry.isDirectory) {
@@ -637,6 +648,7 @@ router.post('/:id/unzip', authenticateToken, async (req, res) => {
     }
 
     await runQuery('COMMIT');
+    transactionStarted = false;
 
     await runQuery(
       'UPDATE users SET storage_used = storage_used + ? WHERE id = ?',
@@ -657,10 +669,12 @@ router.post('/:id/unzip', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(`[Unzip] [${requestId}] Error:`, error);
     
-    try {
-      await runQuery('ROLLBACK');
-    } catch (rollbackError) {
-      console.error(`[Unzip] [${requestId}] Rollback error:`, rollbackError);
+    if (transactionStarted) {
+      try {
+        await runQuery('ROLLBACK');
+      } catch (rollbackError) {
+        console.error(`[Unzip] [${requestId}] Rollback error:`, rollbackError);
+      }
     }
     
     extractingFiles.delete(id);
