@@ -776,7 +776,7 @@ export default function FileExplorer({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className={`font-medium ${theme.text} truncate`}>{file.original_name}</h3>
-                      {file.is_favorite && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                      {Boolean(file.is_favorite) && <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
                     </div>
                     <p className={`text-sm ${theme.textSecondary}`}>
                       {formatBytes(file.size)} • {formatDate(file.created_at)}
